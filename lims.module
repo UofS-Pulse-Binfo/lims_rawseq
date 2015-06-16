@@ -5,6 +5,15 @@
  */
 
 /**
+ * Implements hook_views_api().
+ */
+function lims_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
  * @section
  * "Sequencing Run" Node/Content type.
  */
@@ -401,7 +410,7 @@ function seqrun_form($node, $form_state) {
     if ($num_samples > 0) {
       $form['sample']['sample_snippet']['#markup'] =
           '<br /><br /><strong>Table 1: A subset of parsed samples from the uploaded file.</strong>'
-          . '<br />Please use the following truncated sample list to ensure your file has been pased correctly.'
+          . '<br />Please use the following truncated sample list to ensure your file has been parsed correctly.'
           . theme('table',array(
             'header' => $header,
             'rows' => $rows,
@@ -485,7 +494,7 @@ function seqrun_sample_file_submit($form, &$form_state) {
         // -- Check no column is longer than the database allows.
         $expected = array(80, 80, 80, 80, 10);
         foreach ($expected as $k => $max) {
-          if (strlen($line[$k]) > $max) {
+          if (isset($line[$k]) AND (strlen($line[$k]) > $max)) {
             $error = TRUE;
             $column = ($k == 0) ? 'Index ID' : NULL;
             $column = ($k == 1) ? 'Index Sequence' : $column;
@@ -550,7 +559,7 @@ function seqrun_sample_file_submit($form, &$form_state) {
             'index_seq' => $line[1],
             'sample_name' => $line[2],
             'sample_accession' => $line[3],
-            'plate_well' => $line[4],
+            'plate_well' => (isset($line[4])) ? $line[4] : '',
             'sample_description' => (isset($line[5])) ? $line[5] : '',
             'sample_stock_id' => $sample_stock_id,
             'sample_stock_nid' => $sample_stock_nid,
