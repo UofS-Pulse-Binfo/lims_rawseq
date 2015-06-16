@@ -1,0 +1,207 @@
+<?php
+/**
+ * @file
+ * Defines drupal database tables needed by this module.
+ */
+
+/**
+ * Implements hook_schema().
+ * Defines our database tables to the Drupal Schema API which then
+ * creates/removes them on installation/uninstallation of our module.
+ */
+function lims_schema() {
+  $schema = array();
+
+  $schema['lims_seqrun'] = array(
+    'description' => 'Contains "Sequencing Run" node type-specific data.',
+    'fields' => array(
+      'run_id' => array(
+        'description' => 'The primary identifier for a Sequencing Run.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => 'The primary identifier for a node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'run_name' => array(
+        'description' => 'A short, descriptive name for the run.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'filename' => array(
+        'description' => 'The full name of the file including path and extension.',
+        'type' => 'varchar',
+        'length' => 500,
+        'default' => '',
+      ),
+      'md5sum' => array(
+        'description' => 'The MD5 hash describing the file.',
+        'type' => 'varchar',
+        'length' => 50,
+        'default' => '',
+      ),
+      'library_type' => array(
+        'description' => 'The method of library preparation for sequencing.',
+        'type' => 'varchar',
+        'length' => 30
+      ),
+      'insert_length' => array(
+        'description' => 'The length of the insert in base pairs.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'fragment_length' => array(
+        'description' => 'The length of the fragment in base pairs.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'index_type' => array(
+        'description' => 'The collection of barcodes used to identify samples.',
+        'type' => 'varchar',
+        'length' => 30
+      ),
+      'technology' => array(
+        'description' => 'The sequencing platform.',
+        'type' => 'varchar',
+        'length' => 30
+      ),
+      'read_type' => array(
+        'description' => 'The method used to generate the reads.',
+        'type' => 'varchar',
+        'length' => 30
+      ),
+      'description' => array(
+        'description' => 'Additional details related to a sequencing run.',
+        'type' => 'text'
+      ),
+      'samples_fid' => array(
+        'description' => 'The file id containing sample information.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+    ),
+   'indexes' => array(
+      'library_type' => array('library_type'),
+      'library_type' => array('index_type'),
+      'library_type' => array('technology'),
+      'library_type' => array('read_type'),
+    ),
+    'unique keys' => array(
+      'nid' => array('nid'),
+      'file' => array('filename'),
+    ),
+    'foreign keys' => array(
+      'node' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'file_managed' => array(
+        'table' => 'file_managed',
+        'columns' => array('samples_fid' => 'fid'),
+      ),
+    ),
+    'primary key' => array('run_id'),
+  );
+
+  $schema['lims_seqrun_species'] = array(
+    'description' => 'The species sequenced during a "Sequencing Run".',
+    'fields' => array(
+      'run_id' => array(
+        'description' => 'The primary identifier for a Sequencing Run.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'organism_id' => array(
+        'description' => 'The primary identifier for a chado organism.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+   'indexes' => array(
+      'organism_id' => array('organism_id'),
+    ),
+    'unique keys' => array(),
+    'foreign keys' => array(
+      'chado.organism' => array(
+        'table' => 'chado.organism',
+        'columns' => array('organism_id' => 'organism_id'),
+      ),
+    ),
+    'primary key' => array('run_id', 'organism_id'),
+  );
+
+  $schema['lims_seqrun_samples'] = array(
+    'description' => 'The samples sequenced during a "Sequencing Run".',
+    'fields' => array(
+      'sample_id' => array(
+        'description' => 'The primary identifier for a sample.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'samples_fid' => array(
+        'description' => 'The file id containing sample information.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'An identifier for the index.',
+        'type' => 'varchar',
+        'length' => 80
+      ),
+      'index_seq' => array(
+        'description' => 'The sequence of the index.',
+        'type' => 'varchar',
+        'length' => 80
+      ),
+      'sample_name' => array(
+        'description' => 'The name of the sample used when sequencing.',
+        'type' => 'varchar',
+        'length' => 80
+      ),
+      'sample_accession' => array(
+        'description' => 'The KnowPulse Accession of the germplasm the DNA/RNA was extracted from.',
+        'type' => 'varchar',
+        'length' => 80
+      ),
+      'sample_stock_id' => array(
+        'description' => 'The chado stock_id of the germplasm the DNA/RNA was extracted from.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sample_stock_nid' => array(
+        'description' => 'The node id of the germplasm the DNA/RNA was extracted from.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'plate_well' => array(
+        'description' => 'The location the sample was placed on the plate.',
+        'type' => 'varchar',
+        'length' => 10
+      ),
+      'sample_description' => array(
+        'description' => 'A free-text description of the sample.',
+        'type' => 'text',
+      ),
+    ),
+   'indexes' => array(
+      'sample_accession' => array('sample_accession'),
+      'samples_fid' => array('samples_fid'),
+    ),
+    'unique keys' => array(
+      'by_id' => array('samples_fid', 'index_id')
+    ),
+    'foreign keys' => array( ),
+    'primary key' => array('sample_id'),
+  );
+  return $schema;
+}

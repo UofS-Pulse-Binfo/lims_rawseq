@@ -1,0 +1,5 @@
+name = LIMS
+description = Provide management of raw sequencing data (not stored in chado).
+core = 7.x
+package = KnowPulse
+dependencies[] = views
