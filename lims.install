@@ -7,7 +7,8 @@
 /**
  * Add support for single sample sequence runs.
  */
-function lims_update_7002(&$sandbox) {
+function lims_update_7001(&$sandbox) {
+
   $spec = array(
     'description' => 'The sample_id of the single un-indexed sample.',
     'type' => 'int',
@@ -15,6 +16,7 @@ function lims_update_7002(&$sandbox) {
   );
   db_add_field('lims_seqrun','sample_id',$spec);
 
+  db_drop_unique_key('lims_seqrun_samples','by_id');
 }
 
 /**

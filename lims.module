@@ -360,7 +360,7 @@ function seqrun_form($node, $form_state) {
   );
 
   $index_type = (isset($node->seqrun->index_type)) ? $node->seqrun->index_type : NULL;
-  $index_type = (isset($form_state['values'])) ? $form_state['values']['index_type'] : $index_type;
+  $index_type = (isset($form_state['values']['index_type'])) ? $form_state['values']['index_type'] : $index_type;
 
   // If there are no indexes then there must only be one sample.
   if ($index_type == 'None') {
@@ -573,81 +573,102 @@ function seqrun_sample_file_submit($form, &$form_state) {
           $line[$k] = trim($v);
         }
 
+        // Determine if the line is empty.
+        $empty = FALSE;
+        if (sizeof($line) == 1 AND empty($line[0])) {
+          $empty = TRUE;
+        }
         // Validate the line.
-        // -- Check no column is longer than the database allows.
-        $expected = array(80, 80, 80, 80, 10);
-        foreach ($expected as $k => $max) {
-          if (isset($line[$k]) AND (strlen($line[$k]) > $max)) {
-            $error = TRUE;
-            $column = ($k == 0) ? 'Index ID' : NULL;
-            $column = ($k == 1) ? 'Index Sequence' : $column;
-            $column = ($k == 2) ? 'Sample Name' : $column;
-            $column = ($k == 3) ? 'Sample Accession' : $column;
-            $column = ($k == 4) ? 'Plate Well' : $column;
-            drupal_set_message('Line '.$i.':  The <i>'.$column.'</i> is too long (maximum length: '.$max.' characters).', 'error');
+        if (!$empty) {
+          // -- Check no column is longer than the database allows.
+          $expected = array(80, 80, 80, 80, 10);
+          foreach ($expected as $k => $max) {
+            if (isset($line[$k]) AND (strlen($line[$k]) > $max)) {
+              $error = TRUE;
+              $column = ($k == 0) ? 'Index ID' : NULL;
+              $column = ($k == 1) ? 'Index Sequence' : $column;
+              $column = ($k == 2) ? 'Sample Name' : $column;
+              $column = ($k == 3) ? 'Sample Accession' : $column;
+              $column = ($k == 4) ? 'Plate Well' : $column;
+              drupal_set_message('Line '.$i.':  The <i>'.$column.'</i> is too long (maximum length: '.$max.' characters).', 'error');
+            }
           }
-        }
-        // -- 1st three columns are not empty.
-        if (empty($line[0]) OR empty($line[1]) OR empty($line[2])) {
-          $error = TRUE;
-          drupal_set_message('Line '.$i.': The first three columns (Index ID, Index Sequence & Sample Name) are required and thus should not be empty.','error');
-          //form_set_error('sample_file', 'Line '.$i.': The first three columns (Index ID, Index Sequence & Sample Name) are required and thus should not be empty.');
-        }
-        // -- 2nd column is all sequence.
-        if (!empty($line[2]) AND !preg_match('/^[ATGCatgc]+$/', $line[1])) {
-          $error = TRUE;
-          drupal_set_message('Line '.$i.': The index sequence should consist of only ATGC.','error');
-          //form_set_error('sample_file', 'Line '.$i.': The index sequence should consist of only ATGC.');
-        }
-        // -- Accession should always be KP:GERM###.
-        if (!empty($line[3]) AND !preg_match('/KP:GERM\d+/', $line[3])) {
-          $error = TRUE;
-          drupal_set_message('Line '.$i.': The accession should always be KP:GERM### in full capitals.','error');
-        }
-        // -- Ensure KP:GERM exists.
-        elseif (!empty($line[3])) {
-          $kpgerm = chado_query('SELECT stock_id FROM {stock} WHERE uniquename=:accession', array(':accession' => $line[3]))->fetchField();
-          if (empty($kpgerm)) {
+          // -- Index ID not empty.
+          if (empty($line[0])) {
             $error = TRUE;
-            drupal_set_message('Line '.$i.': The accession provided, <i>'.$line[3].'</i>, does not exist in KnowPulse.', 'error');
+            drupal_set_message('Line '.$i.': The Index ID is required and thus should not be empty.','error');
+            //form_set_error('sample_file', 'Line '.$i.': The first three columns (Index ID, Index Sequence & Sample Name) are required and thus should not be empty.');
           }
+          // -- Index Sequence not empty
+          //    EXCEPTION: Index ID is "unknown".
+          if (empty($line[1]) AND !preg_match('/[uU]nknown/',$line[0])) {
+            $error = TRUE;
+            drupal_set_message('Line '.$i.': The Index Sequence required and thus should not be empty.','error');
+            //form_set_error('sample_file', 'Line '.$i.': The first three columns (Index ID, Index Sequence & Sample Name) are required and thus should not be empty.');
+          }
+          // -- Sample Name not empty.
+          if (empty($line[2])) {
+            $error = TRUE;
+            drupal_set_message('Line '.$i.': The Sample Name is required and thus should not be empty.','error');
+            //form_set_error('sample_file', 'Line '.$i.': The first three columns (Index ID, Index Sequence & Sample Name) are required and thus should not be empty.');
+          }
+          // -- 2nd column is all sequence.
+          //    EXCEPTION: Index ID is "unknown".
+          if (!empty($line[1]) AND !preg_match('/^[ATGCatgc]+$/', $line[1]) AND !preg_match('/[uU]nknown/',$line[0])) {
+            $error = TRUE;
+            drupal_set_message('Line '.$i.': The index sequence should consist of only ATGC.','error');
+            //form_set_error('sample_file', 'Line '.$i.': The index sequence should consist of only ATGC.');
+          }
+          // -- Accession should always be KP:GERM###.
+          if (!empty($line[3]) AND !preg_match('/KP:GERM\d+/', $line[3])) {
+            $error = TRUE;
+            drupal_set_message('Line '.$i.': The accession should always be KP:GERM### in full capitals.','error');
+          }
+          // -- Ensure KP:GERM exists.
+          elseif (!empty($line[3])) {
+            $kpgerm = chado_query('SELECT stock_id FROM {stock} WHERE uniquename=:accession', array(':accession' => $line[3]))->fetchField();
+            if (empty($kpgerm)) {
+              $error = TRUE;
+              drupal_set_message('Line '.$i.': The accession provided, <i>'.$line[3].'</i>, does not exist in KnowPulse.', 'error');
+            }
+            else {
+              $sample_stock_id = $kpgerm;
+              $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
+            }
+          }
+          // -- Attempt Auto-detect Accession based on sample name.
           else {
-            $sample_stock_id = $kpgerm;
-            $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
-          }
-        }
-        // -- Attempt Auto-detect Accession based on sample name.
-        else {
 
-          // First TRY to look it up based on sample name.
-          $kpgerm = chado_query('SELECT uniquename, stock_id FROM {stock} WHERE name=:sample', array(':sample' => $line[2]))->fetchObject();
-          if (!empty($kpgerm)) {
-            $line[3] = $kpgerm->uniquename;
-            $sample_stock_id = $kpgerm->stock_id;
-            $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
+            // First TRY to look it up based on sample name.
+            $kpgerm = chado_query('SELECT uniquename, stock_id FROM {stock} WHERE name=:sample', array(':sample' => $line[2]))->fetchObject();
+            if (!empty($kpgerm)) {
+              $line[3] = $kpgerm->uniquename;
+              $sample_stock_id = $kpgerm->stock_id;
+              $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
+            }
+            // If unable to then provide error message. :(
+            else {
+              $error = TRUE;
+              drupal_set_message('Line '.$i.': The accession is required and could not be automatically determined by the sample name. Please provide it in the file.','error');
+              //form_set_error('sample_file', 'Line '.$i.': The accession should always be KP:GERM### in full capitals.');
+            }
           }
-          // If unable to then provide error message. :(
-          else {
-            $error = TRUE;
-            drupal_set_message('Line '.$i.': The accession is required and could not be automatically determined by the sample name. Please provide it in the file.','error');
-            //form_set_error('sample_file', 'Line '.$i.': The accession should always be KP:GERM### in full capitals.');
-          }
-        }
 
-        // Save it to the database.
-        if (!$error) {
-          $sample = array(
-            'samples_fid' => $file->fid,
-            'index_id' => $line[0],
-            'index_seq' => $line[1],
-            'sample_name' => $line[2],
-            'sample_accession' => $line[3],
-            'plate_well' => (isset($line[4])) ? $line[4] : '',
-            'sample_description' => (isset($line[5])) ? $line[5] : '',
-            'sample_stock_id' => $sample_stock_id,
-            'sample_stock_nid' => $sample_stock_nid,
-          );
-          drupal_write_record('lims_seqrun_samples', $sample);
+          // Save it to the database.
+          if (!$error) {
+            $sample = array(
+              'samples_fid' => $file->fid,
+              'index_id' => $line[0],
+              'index_seq' => $line[1],
+              'sample_name' => $line[2],
+              'sample_accession' => $line[3],
+              'plate_well' => (isset($line[4])) ? $line[4] : '',
+              'sample_description' => (isset($line[5])) ? $line[5] : '',
+              'sample_stock_id' => $sample_stock_id,
+              'sample_stock_nid' => $sample_stock_nid,
+            );
+            drupal_write_record('lims_seqrun_samples', $sample);
+          }
         }
       }
     }
