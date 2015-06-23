@@ -45,6 +45,7 @@ function seqrun_load(&$nodes) {
   // Keep track of the sample file ids while populating the main data
   // to make for more efficient retrieval of samples later.
   $sample_fids = array();
+  $sample_ids = array();
 
   // Select all the details to populate the nodes.
   $nids = array_keys($nodes);
@@ -69,24 +70,30 @@ function seqrun_load(&$nodes) {
 
   // Now add them all to the nodes.
   foreach($results as $r) {
-    $nodes[$r->nid]->run_id = $r->run_id;
-    $nodes[$r->nid]->run_name = $r->run_name;
-    $nodes[$r->nid]->filename = $r->filename;
-    $nodes[$r->nid]->md5sum = $r->md5sum;
-    $nodes[$r->nid]->library_type = $r->library_type;
-    $nodes[$r->nid]->insert_length = $r->insert_length;
-    $nodes[$r->nid]->fragment_length = $r->fragment_length;
-    $nodes[$r->nid]->index_type = $r->index_type;
-    $nodes[$r->nid]->technology = $r->technology;
-    $nodes[$r->nid]->read_type = $r->read_type;
-    $nodes[$r->nid]->description = $r->description;
-    $nodes[$r->nid]->samples_fid = $r->samples_fid;
+    $nodes[$r->nid]->seqrun = (isset($nodes[$r->nid]->seqrun)) ? $nodes[$r->nid]->seqrun : new stdClass();
+    $nodes[$r->nid]->seqrun->run_id = $r->run_id;
+    $nodes[$r->nid]->seqrun->run_name = $r->run_name;
+    $nodes[$r->nid]->seqrun->filename = $r->filename;
+    $nodes[$r->nid]->seqrun->md5sum = $r->md5sum;
+    $nodes[$r->nid]->seqrun->library_type = $r->library_type;
+    $nodes[$r->nid]->seqrun->insert_length = $r->insert_length;
+    $nodes[$r->nid]->seqrun->fragment_length = $r->fragment_length;
+    $nodes[$r->nid]->seqrun->index_type = $r->index_type;
+    $nodes[$r->nid]->seqrun->technology = $r->technology;
+    $nodes[$r->nid]->seqrun->read_type = $r->read_type;
+    $nodes[$r->nid]->seqrun->description = $r->description;
+    $nodes[$r->nid]->seqrun->samples_fid = $r->samples_fid;
     $nodes[$r->nid]->samples = array();
 
     // Keep track of the sample file id for each loaded node
     // so that we can attach the samples later.
     if ($r->samples_fid) {
       $sample_fids[$r->samples_fid] = $r->nid;
+    }
+
+    // Keep track of nodes with single samples
+    if ($r->sample_id) {
+      $sample_ids[$r->sample_id] = $r->nid;
     }
 
     // Since there can be more than one species, the join above will actually
@@ -103,6 +110,30 @@ function seqrun_load(&$nodes) {
   }
 
   // Now retrieve and add samples.
+  // CASE 1: Single Sample to retrieve
+  if (sizeof($sample_ids) > 0) {
+    $results = db_query('
+      SELECT *
+      FROM {lims_seqrun_samples}
+      WHERE sample_id IN (:ids)
+    ', array(':ids' => array_keys($sample_ids)));
+    // Add each sample to the appropriate node based on the sample fids array
+    // we created above which maps fid to nid.
+    foreach($results as $r) {
+      $nid = $sample_ids[$r->sample_id];
+
+      $sample = array(
+        'sample_id' => $r->sample_id,
+        'sample_name' => $r->sample_name,
+        'sample_accession' => $r->sample_accession,
+        'sample_stock_id' => $r->sample_stock_id,
+        'sample_stock_nid' => $r->sample_stock_nid,
+        'sample_description' => $r->sample_description,
+      );
+      $nodes[$nid]->samples[] = (object) $sample;
+    }
+  }
+  // CASE 2: Multiple samples grouped by a sample_fid.
   if (sizeof($sample_fids) > 0) {
     $results = db_query('
       SELECT *
@@ -114,7 +145,6 @@ function seqrun_load(&$nodes) {
     // we created above which maps fid to nid.
     foreach($results as $r) {
       $nid = $sample_fids[$r->samples_fid];
-
       $sample = array(
         'sample_id' => $r->sample_id,
         'index_id' => $r->index_id,
@@ -129,6 +159,7 @@ function seqrun_load(&$nodes) {
       $nodes[$nid]->samples[] = (object) $sample;
     }
   }
+
 }
 
 /**
@@ -190,7 +221,7 @@ function seqrun_form($node, $form_state) {
 
   $form['run_id'] = array(
     '#type' => 'hidden',
-    '#value' => (isset($node->run_id)) ? $node->run_id : NULL,
+    '#value' => (isset($node->seqrun->run_id)) ? $node->seqrun->run_id : NULL,
   );
 
   // Ensure keys = values.
@@ -252,7 +283,7 @@ function seqrun_form($node, $form_state) {
     '#description' => t('The method of library preparation for sequencing.'),
     '#options' => $options['library_type'],
     '#required' => TRUE,
-    '#default_value' => (isset($node->library_type)) ? $node->library_type : '',
+    '#default_value' => (isset($node->seqrun->library_type)) ? $node->seqrun->library_type : '',
   );
 
   $form['library']['insert_len'] = array(
@@ -260,7 +291,7 @@ function seqrun_form($node, $form_state) {
     '#title' => t('Insert Length'),
     '#description' => 'Enter the length of the insert in base pairs. This will not apply to all sequencing technologies.',
     '#element_validate' => array('element_validate_integer_positive'),
-    '#default_value' => (!empty($node->insert_length)) ? $node->insert_length : '',
+    '#default_value' => (!empty($node->seqrun->insert_length)) ? $node->seqrun->insert_length : '',
   );
 
   $form['library']['frag_len'] = array(
@@ -268,7 +299,7 @@ function seqrun_form($node, $form_state) {
     '#title' => t('Fragment Length'),
     '#description' => 'Enter the length of the fragment in base pairs. This will not apply to all sequencing technologies.',
     '#element_validate' => array('element_validate_integer_positive'),
-    '#default_value' => (!empty($node->fragment_length)) ? $node->fragment_length : '',
+    '#default_value' => (!empty($node->seqrun->fragment_length)) ? $node->seqrun->fragment_length : '',
   );
 
 
@@ -278,7 +309,7 @@ function seqrun_form($node, $form_state) {
     '#description' => t('The collection of barcodes used to identify samples. If "Other", please elaborate in the "Run Description".'),
     '#options' => $options['index_type'],
     '#required' => TRUE,
-    '#default_value' => (isset($node->index_type)) ? $node->index_type : '',
+    '#default_value' => (isset($node->seqrun->index_type)) ? $node->seqrun->index_type : '',
   );
 
   $form['sequencing'] = array(
@@ -292,7 +323,7 @@ function seqrun_form($node, $form_state) {
     '#description' => 'Choose the sequencing platform.',
     '#options' => $options['technology'],
     '#required' => TRUE,
-    '#default_value' => (isset($node->technology)) ? $node->technology : '',
+    '#default_value' => (isset($node->seqrun->technology)) ? $node->seqrun->technology : '',
   );
 
   $form['sequencing']['read_type'] = array(
@@ -301,7 +332,7 @@ function seqrun_form($node, $form_state) {
     '#description' => t('Choose the method used to generate the reads.'),
     '#options' => $options['read_type'],
     '#required' => TRUE,
-    '#default_value' => (isset($node->read_type)) ? $node->read_type : '',
+    '#default_value' => (isset($node->seqrun->read_type)) ? $node->seqrun->read_type : '',
   );
 
   $form['file'] = array(
@@ -313,14 +344,14 @@ function seqrun_form($node, $form_state) {
     '#type' => 'textfield',
     '#title' => 'File Name',
     '#description' => 'Specify the full name of the file <em>including the path and extension</em>.',
-    '#default_value' => (isset($node->filename)) ? $node->filename : '',
+    '#default_value' => (isset($node->seqrun->filename)) ? $node->seqrun->filename : '',
   );
 
   $form['file']['md5sum'] = array(
     '#type' => 'textfield',
     '#title' => 'MD5 Checksum',
     '#description' => 'The MD5 hash describing the file (used to verify the file is complete & intact).',
-    '#default_value' => (isset($node->md5sum)) ? $node->md5sum : '',
+    '#default_value' => (isset($node->seqrun->md5sum)) ? $node->seqrun->md5sum : '',
   );
 
   $form['sample'] = array(
@@ -328,95 +359,147 @@ function seqrun_form($node, $form_state) {
     '#title' => t('Sample Details'),
   );
 
-  $xls_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.xls';
-  $tsv_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.tsv';
-  $help = '<br /><strong>Samples File Template:</strong> <a href="' . url($xls_template) . '">XLS</a>, <a href="' . url($tsv_template) . '">TSV</a><br /><br />
-    <strong>Samples File Specifications:</strong><br />
-    A tab-delimited file where each line describes a single well/lane of sequencing. Each line should have the the following columns:
-    <ol>
-      <li><em>Index ID<span style="color:red" title="required">*</span>:</em> The name of the index used for this particular sample (ie: GBS-Idx1).</li>
-      <li><em>Index Sequence<span style="color:red" title="required">*</span>:</em> The sequence of the index (ie: CTCC).</li>
-      <li><em>Sample Name<span style="color:red" title="required">*</span>:</em> The name you gave your sample. NOTE: IF your sample name exactly matches that of the germplasm you extracted it from then the KP:GERM ID will be looked-up automatically.</li>
-      <li><em>Sample Accession<span style="color:red" title="required"><sup>++</sup></span>:</em> The KP:GERM ID in KnowPulse for the germplasm your sample was extracted from (ie: KP:GERM58 if your sample is CDC Redberry).</li>
-      <li><em>Plate Well:</em> The location of the sample in the plate (ie: A1).</li>
-      <li><em>Sample Description:</em> Any additional notes or description of the sample (ie: seed source, number of plants pooled, etc.).</li>
-    </ol>
-      <div class="footnotes"><span style="color:red" title="required">* Required Columns.</span></div>
-      <div class="footnotes"><span style="color:red" title="required"><sup>++</sup> Accession is required unless your sample name exactly matches germplasm in KnowPulse. The accession in the file (if supplied) will always take precedence.</span></div>
-      <div class="footnotes"><em>NOTE: The file should contain 6 columns. If the column is not required then leave it empty.</em></div>
-    <br />';
-  $form['sample']['file_help'] = array(
-    '#type' => 'markup',
-    '#markup' => $help
-  );
+  $index_type = (isset($node->seqrun->index_type)) ? $node->seqrun->index_type : NULL;
+  $index_type = (isset($form_state['values'])) ? $form_state['values']['index_type'] : $index_type;
 
-  // Needed for file upload.
-  $form['#attributes']['enctype'] = 'multipart/form-data';
+  // If there are no indexes then there must only be one sample.
+  if ($index_type == 'None') {
 
-  // Provide field to upload file.
-  $samples_fid = (isset($node->samples_fid)) ? $node->samples_fid : NULL;
-  $samples_fid = (isset($form_state['values']['sample_file'])) ? $form_state['values']['sample_file'] : $samples_fid;
-  $samples_fid = (isset($form_state['values']) AND empty($form_state['values']['sample_file'])) ? 0 : $samples_fid;
-  $form['sample']['sample_file'] = array(
-    '#type' => 'managed_file',
-    '#title' => 'Samples File',
-    '#process' => array('seqrun_file_element_process'),
-    '#upload_validators' => array('file_validate_extensions' => array('txt tsv')),
-    '#default_value' => $samples_fid,
-    '#ajax' => array(
-      'callback' => 'ajax_samples_file_show_snippet_callback',
-      'wrapper' => 'samples-table',
-    )
-  );
-
-  $form['sample']['sample_snippet'] = array(
-    '#type' => 'markup',
-    '#markup' => ''
-  );
-
-  if (!empty($samples_fid)) {
-    // Generate Samples Snippet to allow users to evaluate
-    // whether their file was parsed correctly.
-    $header = array(
-      array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
-      array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
-    );
-    $rows = array();
-    // Second header.
-    $rows[] = array(
-      array( 'data' => 'ID', 'header' => TRUE),
-      array( 'data' => 'Sequence', 'header' => TRUE),
-      array( 'data' => 'Name', 'header' => TRUE),
-      array( 'data' => 'Accession', 'header' => TRUE),
-      array( 'data' => 'Plate Well', 'header' => TRUE),
-      array( 'data' => 'Description', 'header' => TRUE),
-    );
-    $i = 0;
-    $num_samples = db_query('SELECT count(*) FROM {lims_seqrun_samples} WHERE samples_fid=:fid', array(':fid' => $samples_fid))->fetchField();
-    $sql = 'SELECT * FROM {lims_seqrun_samples} WHERE samples_fid=:fid ORDER BY sample_id ASC';
-    $samples = db_query($sql, array(':fid' => $samples_fid));
-    foreach ($samples as $sample) {
-      $i++;
-      if ($i >= 20) { break; }
-      $rows[] = array(
-        $sample->index_id,
-        $sample->index_seq,
-        $sample->sample_name,
-        $sample->sample_accession,
-        $sample->plate_well,
-        $sample->sample_description
-      );
+    // Retrieve the default.
+    if (!empty($node->samples) AND !isset($node->samples[0]->index_id)) {
+      $sample = $node->samples[0];
+      $sample->germplasm_name = str_replace(array(':id',':name'), array($sample->sample_stock_id, $sample->sample_accession), '(:id) :name');
     }
-    if ($num_samples > 0) {
-      $form['sample']['sample_snippet']['#markup'] =
-          '<br /><br /><strong>Table 1: A subset of parsed samples from the uploaded file.</strong>'
-          . '<br />Please use the following truncated sample list to ensure your file has been parsed correctly.'
-          . theme('table',array(
-            'header' => $header,
-            'rows' => $rows,
-            'attributes' => array('style' => 'width:auto')
-          ))
-          .'<strong>Total Samples Parsed: ' . $num_samples . '</strong> (only a subset of which are shown above)';
+    elseif (isset($form_state['values'])) {
+      $sample = new stdclass();
+      $sample->sample_name = $sample_name;
+      $sample->germplasm_name = $germplasm_name;
+      $sample->sample_description = $sample_description;
+    }
+    else {
+      $sample = new stdclass();
+      $sample->sample_name = '';
+      $sample->germplasm_name = '';
+      $sample->sample_description = '';
+    }
+
+    $form['sample']['sample_name'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Sample Name',
+      '#description' => 'The name you gave your sample.',
+      '#default_value' => $sample->sample_name,
+    );
+
+    $form['sample']['germplasm_name'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Germplasm Name',
+      '#description' => 'The name of the germplasm your sample was extracted from.',
+      '#autocomplete_path' => 'tripal_ajax/tripal_germplasm/name_to_id/ALL',
+      '#default_value' => $sample->germplasm_name,
+    );
+
+    $form['sample']['sample_description'] = array(
+      '#type' => 'textarea',
+      '#rows' => 2,
+      '#title' => 'Sample Description',
+      '#description' => 'Any additional notes or description of the sample (ie: seed source, number of plants pooled, etc.).',
+      '#default_value' => $sample->sample_description,
+    );
+
+  }
+  // Then there are multiple samples thus provide a means to upload meta-data.
+  else {
+
+    $xls_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.xls';
+    $tsv_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.tsv';
+    $help = '<br /><strong>Samples File Template:</strong> <a href="' . url($xls_template) . '">XLS</a>, <a href="' . url($tsv_template) . '">TSV</a><br /><br />
+      <strong>Samples File Specifications:</strong><br />
+      A tab-delimited file where each line describes a single well/lane of sequencing. Each line should have the the following columns:
+      <ol>
+        <li><em>Index ID<span style="color:red" title="required">*</span>:</em> The name of the index used for this particular sample (ie: GBS-Idx1).</li>
+        <li><em>Index Sequence<span style="color:red" title="required">*</span>:</em> The sequence of the index (ie: CTCC).</li>
+        <li><em>Sample Name<span style="color:red" title="required">*</span>:</em> The name you gave your sample. NOTE: IF your sample name exactly matches that of the germplasm you extracted it from then the KP:GERM ID will be looked-up automatically.</li>
+        <li><em>Sample Accession<span style="color:red" title="required"><sup>++</sup></span>:</em> The KP:GERM ID in KnowPulse for the germplasm your sample was extracted from (ie: KP:GERM58 if your sample is CDC Redberry).</li>
+        <li><em>Plate Well:</em> The location of the sample in the plate (ie: A1).</li>
+        <li><em>Sample Description:</em> Any additional notes or description of the sample (ie: seed source, number of plants pooled, etc.).</li>
+      </ol>
+        <div class="footnotes"><span style="color:red" title="required">* Required Columns.</span></div>
+        <div class="footnotes"><span style="color:red" title="required"><sup>++</sup> Accession is required unless your sample name exactly matches germplasm in KnowPulse. The accession in the file (if supplied) will always take precedence.</span></div>
+        <div class="footnotes"><em>NOTE: The file should contain 6 columns. If the column is not required then leave it empty.</em></div>
+      <br />';
+    $form['sample']['file_help'] = array(
+      '#type' => 'markup',
+      '#markup' => $help
+    );
+
+    // Needed for file upload.
+    $form['#attributes']['enctype'] = 'multipart/form-data';
+
+    // Provide field to upload file.
+    $samples_fid = (isset($node->seqrun->samples_fid)) ? $node->seqrun->samples_fid : NULL;
+    $samples_fid = (isset($form_state['values']['sample_file'])) ? $form_state['values']['sample_file'] : $samples_fid;
+    $samples_fid = (isset($form_state['values']) AND empty($form_state['values']['sample_file'])) ? 0 : $samples_fid;
+    $form['sample']['sample_file'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'Samples File',
+      '#process' => array('seqrun_file_element_process'),
+      '#upload_validators' => array('file_validate_extensions' => array('txt tsv')),
+      '#default_value' => $samples_fid,
+      '#ajax' => array(
+        'callback' => 'ajax_samples_file_show_snippet_callback',
+        'wrapper' => 'samples-table',
+      )
+    );
+
+    $form['sample']['sample_snippet'] = array(
+      '#type' => 'markup',
+      '#markup' => ''
+    );
+
+    if (!empty($samples_fid)) {
+      // Generate Samples Snippet to allow users to evaluate
+      // whether their file was parsed correctly.
+      $header = array(
+        array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
+        array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
+      );
+      $rows = array();
+      // Second header.
+      $rows[] = array(
+        array( 'data' => 'ID', 'header' => TRUE),
+        array( 'data' => 'Sequence', 'header' => TRUE),
+        array( 'data' => 'Name', 'header' => TRUE),
+        array( 'data' => 'Accession', 'header' => TRUE),
+        array( 'data' => 'Plate Well', 'header' => TRUE),
+        array( 'data' => 'Description', 'header' => TRUE),
+      );
+      $i = 0;
+      $num_samples = db_query('SELECT count(*) FROM {lims_seqrun_samples} WHERE samples_fid=:fid', array(':fid' => $samples_fid))->fetchField();
+      $sql = 'SELECT * FROM {lims_seqrun_samples} WHERE samples_fid=:fid ORDER BY sample_id ASC';
+      $samples = db_query($sql, array(':fid' => $samples_fid));
+      foreach ($samples as $sample) {
+        $i++;
+        if ($i >= 20) { break; }
+        $rows[] = array(
+          $sample->index_id,
+          $sample->index_seq,
+          $sample->sample_name,
+          $sample->sample_accession,
+          $sample->plate_well,
+          $sample->sample_description
+        );
+      }
+      if ($num_samples > 0) {
+        $form['sample']['sample_snippet']['#markup'] =
+            '<br /><br /><strong>Table 1: A subset of parsed samples from the uploaded file.</strong>'
+            . '<br />Please use the following truncated sample list to ensure your file has been parsed correctly.'
+            . theme('table',array(
+              'header' => $header,
+              'rows' => $rows,
+              'attributes' => array('style' => 'width:auto')
+            ))
+            .'<strong>Total Samples Parsed: ' . $num_samples . '</strong> (only a subset of which are shown above)';
+      }
     }
   }
 
@@ -424,7 +507,7 @@ function seqrun_form($node, $form_state) {
     '#type' => 'textarea',
     '#title' => t('Run Description'),
     '#description' => t('Any additional details related to this sequencing run.'),
-    '#default_value' => (isset($node->description)) ? $node->description : '',
+    '#default_value' => (isset($node->seqrun->description)) ? $node->seqrun->description : '',
   );
 
   return $form;
@@ -620,6 +703,25 @@ function seqrun_validate(&$node, $form, &$form_state) {
   // Ensure the file exists
   // @todo: unsure how to do this when storage is not yet mounted.
 
+  // The following validation only applies to a single unindexed sample.
+  if ($node->index_type == 'None') {
+    // Ensure the autocomplete was used for the germplasm name.
+    if (!preg_match('/\((\d+)\).*/', $node->germplasm_name, $matches)) {
+      form_set_error('germplasm_name', 'You must choose the germplasm name from the autocomplete drop-down.');
+    }
+    // Ensure the stock_id from the autocomplete exists.
+    else {
+
+      $form_state['values']['germplasm_id'] = $matches[1];
+      $present = chado_query('SELECT true FROM {stock} WHERE stock_id=:id',
+        array(':id' => $form_state['values']['germplasm_id'])) ->fetchField();
+      if (!$present) {
+        form_set_error('germplasm_name', 'The germplasm selected does not exist. Please re-select the <em>Germplasm Name</em> from the drop-down.');
+      }
+
+    }
+  }
+
 }
 
 /**
@@ -629,7 +731,25 @@ function seqrun_validate(&$node, $form, &$form_state) {
  */
 function seqrun_insert($node) {
 
-  // First add data for the core sequencing run.
+  // If the index type is set to None then we have to
+  // insert the single sample since it won't be added with a file.
+  // Do this first so that we can reference it in the core Sequencing Run table.
+  if ($node->index_type == 'None') {
+
+    // NOTE: We're ignoring the sample_fid, index_id, index_seq & plate_well
+    // since they don't apply to a single sample sequencing run.
+    $sample = array(
+      'sample_name' => $node->sample_name,
+      'sample_accession' => 'KP:GERM' . $matches[1],
+      'sample_description' => $node->sample_description,
+      'sample_stock_id' => $node->germplasm_id,
+      'sample_stock_nid' => chado_get_nid_from_id('stock', $node->germplasm_id),
+    );
+    drupal_write_record('lims_seqrun_samples', $sample);
+
+  }
+
+  // Now add data for the core sequencing run.
   $record = array(
     'nid' => $node->nid,
     'run_name' => $node->title,
@@ -669,7 +789,35 @@ function seqrun_insert($node) {
  */
 function seqrun_update($node) {
 
-  // First update data for the core sequencing run.
+  // If the index type is set to None then we have to
+  // insert the single sample since it won't be added with a file.
+  // Do this first so that we can reference it in the core Sequencing Run table.
+  if ($node->index_type == 'None') {
+
+    // NOTE: We're ignoring the sample_fid, index_id, index_seq & plate_well
+    // since they don't apply to a single sample sequencing run.
+    $sample = array(
+      'sample_name' => $node->sample_name,
+      'sample_accession' => 'KP:GERM' . $node->germplasm_id,
+      'sample_description' => $node->sample_description,
+      'sample_stock_id' => $node->germplasm_id,
+      'sample_stock_nid' => chado_get_nid_from_id('stock', $node->germplasm_id),
+    );
+
+    // Check to see if a sample already exists for this sequencing run
+    // and then add or update as appropriate.
+    $sample_id = db_query('SELECT sample_id FROM {lims_seqrun} WHERE nid=:nid',
+      array(':nid' => $node->nid))->fetchField();
+    if ($sample_id) {
+      $sample['sample_id'] = $sample_id;
+      drupal_write_record('lims_seqrun_samples', $sample, 'sample_id');
+    }
+    else {
+      drupal_write_record('lims_seqrun_samples', $sample);
+    }
+  }
+
+  // Now update data for the core sequencing run.
   $record = array(
     'nid' => $node->nid,
     'run_id' => $node->run_id,
@@ -686,6 +834,9 @@ function seqrun_update($node) {
   );
   if (isset($node->sample_file)) {
     $record['samples_fid'] = $node->sample_file;
+  }
+  if (isset($sample['sample_id'])) {
+    $record['sample_id'] = $sample['sample_id'];
   }
   drupal_write_record('lims_seqrun', $record, 'run_id');
 
@@ -731,7 +882,7 @@ function seqrun_view($node, $view_mode, $langcode = NULL) {
   $rows = array();
   $rows[] = array(
     array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
-    $node->run_name
+    $node->seqrun->run_name
   );
   $rows[] = array(
     array( 'data' => 'Species', 'header' => TRUE, 'width' => '20%' ),
@@ -739,31 +890,31 @@ function seqrun_view($node, $view_mode, $langcode = NULL) {
   );
   $rows[] = array(
     array( 'data' => 'Library Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->library_type
+    $node->seqrun->library_type
   );
-  if (!empty($node->insert_length)) {
+  if (!empty($node->seqrun->insert_length)) {
     $rows[] = array(
       array( 'data' => 'Insert Length', 'header' => TRUE, 'width' => '20%' ),
-      $node->insert_length . ' bp'
+      $node->seqrun->insert_length . ' bp'
     );
   }
-  if (!empty($node->fragment_length)) {
+  if (!empty($node->seqrun->fragment_length)) {
     $rows[] = array(
       array( 'data' => 'Fragment Length', 'header' => TRUE, 'width' => '20%' ),
-      $node->fragment_length . ' bp'
+      $node->seqrun->fragment_length . ' bp'
     );
   }
   $rows[] = array(
     array( 'data' => 'Index Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->index_type
+    $node->seqrun->index_type
   );
   $rows[] = array(
     array( 'data' => 'Technology', 'header' => TRUE, 'width' => '20%' ),
-    $node->technology
+    $node->seqrun->technology
   );
   $rows[] = array(
     array( 'data' => 'Ready Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->read_type
+    $node->seqrun->read_type
   );
   $node->content['base'] = array(
     '#markup' => theme('table',array('header' => array(), 'rows' => $rows)),
@@ -774,11 +925,11 @@ function seqrun_view($node, $view_mode, $langcode = NULL) {
   $rows = array();
   $rows[] = array(
     array( 'data' => 'File', 'header' => TRUE, 'width' => '20%' ),
-    $node->filename
+    $node->seqrun->filename
   );
   $rows[] = array(
     array( 'data' => 'MD5 Checksum', 'header' => TRUE, 'width' => '20%' ),
-    $node->md5sum
+    $node->seqrun->md5sum
   );
   $node->content['file'] = array(
     '#markup' => theme('table',array('header' => array(), 'rows' => $rows)),
@@ -786,39 +937,68 @@ function seqrun_view($node, $view_mode, $langcode = NULL) {
 
   // Samples Table
   //-------------------------
-  if (sizeof($node->samples) > 0) {
-    $header = array(
-      array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
-      array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
-    );
-    $rows = array();
-    // Second header.
-    $rows[] = array(
-      array( 'data' => 'ID', 'header' => TRUE),
-      array( 'data' => 'Sequence', 'header' => TRUE),
-      array( 'data' => 'Name', 'header' => TRUE),
-      array( 'data' => 'Accession', 'header' => TRUE),
-      array( 'data' => 'Plate Well', 'header' => TRUE),
-      array( 'data' => 'Description', 'header' => TRUE),
-    );
-    foreach ($node->samples as $sample) {
+  if (!empty($node->samples)) {
+    // CASE 1: Single Sample with no index.
+    if (sizeof($node->samples == 1) AND !isset($node->samples[0]->index_id)) {
+      $rows = array();
+
+      $sample = $node->samples[0];
 
       $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
       $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
 
       $rows[] = array(
-        $sample->index_id,
-        $sample->index_seq,
-        $sample_name,
-        $sample_accession,
-        $sample->plate_well,
+        array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
+        $sample_name
+      );
+      $rows[] = array(
+        array( 'data' => 'Accession', 'header' => TRUE, 'width' => '20%' ),
+        $sample_accession
+      );
+      $rows[] = array(
+        array( 'data' => 'Description', 'header' => TRUE, 'width' => '20%' ),
         $sample->sample_description
       );
-    }
 
-    $node->content['samples'] = array(
-      '#markup' => '<br /><h2>Samples</h2>' . theme('table',array('header' => $header, 'rows' => $rows)),
-    );
+      $node->content['samples'] = array(
+        '#markup' => '<br /><h2>Sample</h2>' . theme('table',array('header' => array(), 'rows' => $rows)),
+      );
+    }
+    // CASE 2: Multiple samples.
+    elseif (sizeof($node->samples) > 0) {
+      $header = array(
+        array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
+        array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
+      );
+      $rows = array();
+      // Second header.
+      $rows[] = array(
+        array( 'data' => 'ID', 'header' => TRUE),
+        array( 'data' => 'Sequence', 'header' => TRUE),
+        array( 'data' => 'Name', 'header' => TRUE),
+        array( 'data' => 'Accession', 'header' => TRUE),
+        array( 'data' => 'Plate Well', 'header' => TRUE),
+        array( 'data' => 'Description', 'header' => TRUE),
+      );
+      foreach ($node->samples as $sample) {
+
+        $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
+        $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
+
+        $rows[] = array(
+          $sample->index_id,
+          $sample->index_seq,
+          $sample_name,
+          $sample_accession,
+          $sample->plate_well,
+          $sample->sample_description
+        );
+      }
+
+      $node->content['samples'] = array(
+        '#markup' => '<br /><h2>Samples</h2>' . theme('table',array('header' => $header, 'rows' => $rows)),
+      );
+    }
   }
   else {
     $node->content['samples'] = array(

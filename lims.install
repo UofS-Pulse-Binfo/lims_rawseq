@@ -5,6 +5,19 @@
  */
 
 /**
+ * Add support for single sample sequence runs.
+ */
+function lims_update_7002(&$sandbox) {
+  $spec = array(
+    'description' => 'The sample_id of the single un-indexed sample.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  );
+  db_add_field('lims_seqrun','sample_id',$spec);
+
+}
+
+/**
  * Implements hook_schema().
  * Defines our database tables to the Drupal Schema API which then
  * creates/removes them on installation/uninstallation of our module.
@@ -85,6 +98,11 @@ function lims_schema() {
         'type' => 'int',
         'unsigned' => TRUE,
       ),
+      'sample_id' => array(
+        'description' => 'The sample_id of the single un-indexed sample.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
     ),
    'indexes' => array(
       'library_type' => array('library_type'),
@@ -104,6 +122,10 @@ function lims_schema() {
       'file_managed' => array(
         'table' => 'file_managed',
         'columns' => array('samples_fid' => 'fid'),
+      ),
+      'single_sample' => array(
+        'table' => 'lims_seqrun_samples',
+        'columns' => array('sample_id' => 'sample_id'),
       ),
     ),
     'primary key' => array('run_id'),
