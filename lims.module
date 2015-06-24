@@ -224,10 +224,15 @@ function seqrun_form($node, $form_state) {
     '#value' => (isset($node->seqrun->run_id)) ? $node->seqrun->run_id : NULL,
   );
 
-  // Ensure keys = values.
+  // Ensure keys = values for options.
   foreach ($options as $category => $opts) {
     if ($category != 'species') {
-      $options[$category] = array_combine($opts, $opts);
+      $options[$category] = array_merge(
+        // Add NULL option to force users to select.
+        array(NULL => ''),
+        // Use the previous values as both the keys and values.
+        array_combine($opts, $opts)
+      );
     }
   }
 
@@ -310,6 +315,10 @@ function seqrun_form($node, $form_state) {
     '#options' => $options['index_type'],
     '#required' => TRUE,
     '#default_value' => (isset($node->seqrun->index_type)) ? $node->seqrun->index_type : '',
+    '#ajax' => array(
+      'callback' => 'ajax_lims_seqrun_index_type_callback',
+      'wrapper' => 'samples-section',
+    ),
   );
 
   $form['sequencing'] = array(
@@ -357,6 +366,8 @@ function seqrun_form($node, $form_state) {
   $form['sample'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sample Details'),
+    '#prefix' => '<div id="samples-section">',
+    '#suffix' => '</div>'
   );
 
   $index_type = (isset($node->seqrun->index_type)) ? $node->seqrun->index_type : NULL;
@@ -408,7 +419,7 @@ function seqrun_form($node, $form_state) {
 
   }
   // Then there are multiple samples thus provide a means to upload meta-data.
-  else {
+  elseif ($index_type !== NULL) {
 
     $xls_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.xls';
     $tsv_template = drupal_get_path('module','lims') . '/LIMS-Sequence_Run-samples_template.tsv';
@@ -502,6 +513,13 @@ function seqrun_form($node, $form_state) {
       }
     }
   }
+  else {
+    $form['sample']['no_index_type_msg'] = array(
+      '#type' => 'markup',
+      '#markup' => '<p>You must select the index type above before specifying
+        samples, since this indicates what information you need to provide.</p>'
+    );
+  }
 
   $form['description'] = array(
     '#type' => 'textarea',
@@ -511,6 +529,13 @@ function seqrun_form($node, $form_state) {
   );
 
   return $form;
+}
+
+/**
+ * AJAX: Replace samples section based on index type.
+ */
+function ajax_lims_seqrun_index_type_callback($form, $form_state) {
+  return $form['sample'];
 }
 
 /**
@@ -725,7 +750,7 @@ function seqrun_validate(&$node, $form, &$form_state) {
   // @todo: unsure how to do this when storage is not yet mounted.
 
   // The following validation only applies to a single unindexed sample.
-  if ($node->index_type == 'None') {
+  if ($node->index_type == 'None' AND isset($node->germplasm_name)) {
     // Ensure the autocomplete was used for the germplasm name.
     if (!preg_match('/\((\d+)\).*/', $node->germplasm_name, $matches)) {
       form_set_error('germplasm_name', 'You must choose the germplasm name from the autocomplete drop-down.');
