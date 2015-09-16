@@ -880,7 +880,7 @@ function seqrun_update($node) {
     'description' => $node->description,
   );
   if (isset($node->sample_file)) {
-    $record['samples_fid'] = $node->sample_file;
+    $record['samples_fid'] = ($node->sample_file === 0 AND isset($node->seqrun->samples_fid)) ? $node->seqrun->samples_fid : $node->sample_file;
     $record['sample_id'] = NULL;
 
     // Clean-up any single samples originally attached to this run.
