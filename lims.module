@@ -190,7 +190,7 @@ function seqrun_form($node, $form_state) {
       'Illumina MiSeq',
       'Roche 454',
       'PacBio RS',
-      'Oxforn Nanopore',
+      'Oxford Nanopore',
     ),
     'read_type' => array(
       'Single end',
@@ -205,6 +205,7 @@ function seqrun_form($node, $form_state) {
       'Single-enzyme GBS',
       'Dual-enzyme GBS',
       'ChIPseq',
+      'Exome capture'
     ),
     'index_type' => array(
       'None',
@@ -880,8 +881,14 @@ function seqrun_update($node) {
   );
   if (isset($node->sample_file)) {
     $record['samples_fid'] = $node->sample_file;
+    $record['sample_id'] = NULL;
+
+    // Clean-up any single samples originally attached to this run.
+    db_query('DELETE FROM {lims_seqrun_samples} WHERE sample_id IN (SELECT sample_id FROM {lims_seqrun} WHERE run_id=:id)', array(':id' => $node->run_id));
+
   }
   if (isset($sample['sample_id'])) {
+    $record['samples_fid'] = NULL;
     $record['sample_id'] = $sample['sample_id'];
   }
   drupal_write_record('lims_seqrun', $record, 'run_id');
@@ -901,6 +908,7 @@ function seqrun_update($node) {
   // Clean-up sample table to ensure that no samples from previously
   // uploaded files hang around.
   db_query('DELETE FROM {lims_seqrun_samples} WHERE samples_fid NOT IN (SELECT samples_fid FROM {lims_seqrun})');
+  
 }
 
 /**

@@ -20,6 +20,14 @@ function lims_update_7001(&$sandbox) {
 }
 
 /**
+ * Bug Fix: Filename is not unique.
+ */
+function lims_update_7002(&$sandbox) {
+
+  db_drop_unique_key('lims_seqrun','file');
+}
+
+/**
  * Implements hook_schema().
  * Defines our database tables to the Drupal Schema API which then
  * creates/removes them on installation/uninstallation of our module.
@@ -114,7 +122,6 @@ function lims_schema() {
     ),
     'unique keys' => array(
       'nid' => array('nid'),
-      'file' => array('filename'),
     ),
     'foreign keys' => array(
       'node' => array(
