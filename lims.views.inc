@@ -11,6 +11,8 @@
 function lims_views_data() {
   $data = array();
 
+  // Sequencing Runs
+  //---------------------------------------------  
   $data['lims_seqrun']['table']['group'] = t('Sequencing Run');
   $data ['lims_seqrun']['table']['base'] = array(
     'field' => 'run_id', // This is the identifier field for the view.

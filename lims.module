@@ -193,10 +193,11 @@ function seqrun_form($node, $form_state) {
       'Oxford Nanopore',
     ),
     'read_type' => array(
-      'Single end',
+      'Single-end',
       'Paired-end',
       'Mate Pair (FR)',
       'Mate Pair (RF)',
+      'Other',
     ),
     'library_type' => array(
       'Genomic',
@@ -211,6 +212,7 @@ function seqrun_form($node, $form_state) {
       'None',
       'Illumina indexing',
       'GBS 96-plex',
+      'Custom', 
       'Other',
     ),
   );
