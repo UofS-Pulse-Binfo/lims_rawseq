@@ -14,6 +14,27 @@ function lims_views_api() {
 }
 
 /**
+ * Implements hook_theme().
+ */
+function lims_theme($existing, $type, $theme, $path) {
+  $items = array();
+
+  $items['lims_seqrun_node'] = array(
+    'template' => 'lims-seqrun-node',
+    'render element' => 'node',
+    'path' => "$path/theme"
+  );
+
+  $items['lims_seqrun_teaser'] = array(
+    'template' => 'lims-seqrun-teaser',
+    'render element' => 'node',
+    'path' => "$path/theme"
+  );
+
+  return $items;
+}
+
+/**
  * @section
  * "Sequencing Run" Node/Content type.
  */
@@ -212,7 +233,7 @@ function seqrun_form($node, $form_state) {
       'None',
       'Illumina indexing',
       'GBS 96-plex',
-      'Custom', 
+      'Custom',
       'Other',
     ),
   );
@@ -378,10 +399,10 @@ function seqrun_form($node, $form_state) {
 
   // Samples can be submitted as either a single sample or a file containing multiple samples
   // depending on whether they are indexed or not. Unfortunatly doing a simple if indexed
-  // then single sample otherwise, file upload causes Drupal Magic to go awry... Thus we 
+  // then single sample otherwise, file upload causes Drupal Magic to go awry... Thus we
   // are assuming file upload to appease the Drupal Gods but if there is no indexing we
   // we will later delete the file upload elements in favour of single sample entry fields.
-  
+
   // File Upload for indexed samples.
   // --------------------------------------------
   $warning = '<div class="messages warning">
@@ -493,7 +514,7 @@ function seqrun_form($node, $form_state) {
     unset($form['sample']['sample_file']);
     $form['sample']['file_help']['#type'] = 'hidden';
     $form['sample']['sample_snippet']['#type'] = 'hidden';
-    
+
     // Retrieve the default.
     if (!empty($node->samples) AND !isset($node->samples[0]->index_id)) {
       $sample = $node->samples[0];
@@ -799,7 +820,7 @@ function seqrun_insert($node) {
   if ($node->index_type == 'None') {
 
     preg_match('/\((\d+)\)/', $node->germplasm_name, $matches);
-    
+
     // NOTE: We're ignoring the sample_fid, index_id, index_seq & plate_well
     // since they don't apply to a single sample sequencing run.
     $sample = array(
@@ -928,7 +949,7 @@ function seqrun_update($node) {
   // Clean-up sample table to ensure that no samples from previously
   // uploaded files hang around.
   db_query('DELETE FROM {lims_seqrun_samples} WHERE samples_fid NOT IN (SELECT samples_fid FROM {lims_seqrun})');
-  
+
 }
 
 /**
@@ -944,140 +965,18 @@ function seqrun_delete($node) {
  */
 function seqrun_view($node, $view_mode, $langcode = NULL) {
 
-
-  // Prepare Species for display.
-  $species = array();
-  foreach ($node->species as $s) {
-    $species[] = '<i>' . $s->genus . ' ' . $s->species . '</i>';
-  }
-
-  // Main Table
-  //-------------------------
-  $rows = array();
-  $rows[] = array(
-    array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->run_name
-  );
-  $rows[] = array(
-    array( 'data' => 'Species', 'header' => TRUE, 'width' => '20%' ),
-    implode(', ',$species)
-  );
-  $rows[] = array(
-    array( 'data' => 'Library Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->library_type
-  );
-  if (!empty($node->seqrun->insert_length)) {
-    $rows[] = array(
-      array( 'data' => 'Insert Length', 'header' => TRUE, 'width' => '20%' ),
-      $node->seqrun->insert_length . ' bp'
+  if ($view_mode == 'teaser') {
+    $node->content['teaser'] = array(
+      '#theme' => 'lims_seqrun_teaser',
+      '#node' => $node,
     );
-  }
-  if (!empty($node->seqrun->fragment_length)) {
-    $rows[] = array(
-      array( 'data' => 'Fragment Length', 'header' => TRUE, 'width' => '20%' ),
-      $node->seqrun->fragment_length . ' bp'
-    );
-  }
-  $rows[] = array(
-    array( 'data' => 'Index Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->index_type
-  );
-  $rows[] = array(
-    array( 'data' => 'Technology', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->technology
-  );
-  $rows[] = array(
-    array( 'data' => 'Ready Type', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->read_type
-  );
-  $node->content['base'] = array(
-    '#markup' => theme('table',array('header' => array(), 'rows' => $rows)),
-  );
-
-  // Short File table
-  //-------------------------
-  $rows = array();
-  $rows[] = array(
-    array( 'data' => 'File', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->filename
-  );
-  $rows[] = array(
-    array( 'data' => 'MD5 Checksum', 'header' => TRUE, 'width' => '20%' ),
-    $node->seqrun->md5sum
-  );
-  $node->content['file'] = array(
-    '#markup' => theme('table',array('header' => array(), 'rows' => $rows)),
-  );
-
-  // Samples Table
-  //-------------------------
-  if (!empty($node->samples)) {
-    // CASE 1: Single Sample with no index.
-    if (sizeof($node->samples == 1) AND !isset($node->samples[0]->index_id)) {
-      $rows = array();
-
-      $sample = $node->samples[0];
-
-      $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-      $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
-
-      $rows[] = array(
-        array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
-        $sample_name
-      );
-      $rows[] = array(
-        array( 'data' => 'Accession', 'header' => TRUE, 'width' => '20%' ),
-        $sample_accession
-      );
-      $rows[] = array(
-        array( 'data' => 'Description', 'header' => TRUE, 'width' => '20%' ),
-        $sample->sample_description
-      );
-
-      $node->content['samples'] = array(
-        '#markup' => '<br /><h2>Sample</h2>' . theme('table',array('header' => array(), 'rows' => $rows)),
-      );
-    }
-    // CASE 2: Multiple samples.
-    elseif (sizeof($node->samples) > 0) {
-      $header = array(
-        array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
-        array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
-      );
-      $rows = array();
-      // Second header.
-      $rows[] = array(
-        array( 'data' => 'ID', 'header' => TRUE),
-        array( 'data' => 'Sequence', 'header' => TRUE),
-        array( 'data' => 'Name', 'header' => TRUE),
-        array( 'data' => 'Accession', 'header' => TRUE),
-        array( 'data' => 'Plate Well', 'header' => TRUE),
-        array( 'data' => 'Description', 'header' => TRUE),
-      );
-      foreach ($node->samples as $sample) {
-
-        $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-        $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
-
-        $rows[] = array(
-          $sample->index_id,
-          $sample->index_seq,
-          $sample_name,
-          $sample_accession,
-          $sample->plate_well,
-          $sample->sample_description
-        );
-      }
-
-      $node->content['samples'] = array(
-        '#markup' => '<br /><h2>Samples</h2>' . theme('table',array('header' => $header, 'rows' => $rows)),
-      );
-    }
   }
   else {
-    $node->content['samples'] = array(
-      '#markup' => '<br /><h3 style="margin:0;padding:0;color:red">No samples uploaded for this Sequencing Run.</h3><div>Please Edit this page and upload a tab-delimited file adhering to the specifications mentioned under "Samples Details"</div>',
+    $node->content['main'] = array(
+      '#theme' => 'lims_seqrun_node',
+      '#node' => $node,
     );
   }
+
   return $node;
 }

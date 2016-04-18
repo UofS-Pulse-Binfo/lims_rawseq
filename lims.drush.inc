@@ -38,7 +38,7 @@ function drush_lims_get_run() {
   
   // If the user provided the run name then we will use that to query LIMS.
   if ($run_name) {
-    $results = db_query('SELECT * FROM lims_seqrun WHERE run_name~:name', array(':name' => $run_name))->fetchAll();
+    $results = db_query('SELECT * FROM lims_seqrun WHERE run_name~:name ORDER BY run_name ASC', array(':name' => $run_name))->fetchAll();
     if (!$results) {
       return drush_set_error('NAME_NOT_FOUND', dt('No runs have that name.'));
     }
@@ -52,7 +52,8 @@ function drush_lims_get_run() {
         FROM lims_seqrun_samples sample 
         LEFT JOIN chado.stock stock ON stock.stock_id=sample.sample_stock_id 
         LEFT JOIN lims_seqrun run ON run.samples_fid=sample.samples_fid OR run.sample_id=sample.sample_id
-        WHERE stock.name~:name',
+        WHERE stock.name~:name
+        ORDER BY run.run_name ASC, stock.name ASC',
       array(':name' => $sample_name))->fetchAll();
     if (!$results) {
       return drush_set_error('SAMPLE_NAME_NOT_FOUND', dt('No runs have a sample with that name.'));
@@ -67,7 +68,8 @@ function drush_lims_get_run() {
         FROM lims_seqrun_samples sample 
         LEFT JOIN chado.stock stock ON stock.stock_id=sample.sample_stock_id 
         LEFT JOIN lims_seqrun run ON run.samples_fid=sample.samples_fid OR run.sample_id=sample.sample_id
-        WHERE stock.uniquename=:accession',
+        WHERE stock.uniquename=:accession
+        ORDER BY run.run_name ASC, stock.name ASC',
       array(':accession' => $sample_accession))->fetchAll();
     if (!$results) {
       return drush_set_error('SAMPLE_ACCESSION_NOT_FOUND', dt('No runs have a sample with that accession.'));
