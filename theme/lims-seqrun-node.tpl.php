@@ -80,6 +80,8 @@ $rows[] = array(
 
 print theme('table',array('header' => array(), 'rows' => $rows));
 
+print '<br /><p>'.$node->seqrun->description.'</p>';
+
 // Samples Table
 //-------------------------
 if (!empty($node->samples)) {
