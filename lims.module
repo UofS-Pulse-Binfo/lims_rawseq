@@ -14,6 +14,60 @@ function lims_views_api() {
 }
 
 /**
+ * Implements hook_menu().
+ */
+function lims_menu() {
+  $items['node/%node/download-index'] = array(
+    'title' => 'Index File Download',
+    'description' => 'For hosting a plain text, tab-delimited mapping of samples to indices.',
+    // permissions required to view page
+    'access arguments' => array('access content'),
+    'page callback' => 'lims_download_samples_indices_callback',
+    'page arguments' => array(1),
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback function for hook_menu()
+ */
+function lims_download_samples_indices_callback($node) {
+  $output = '';
+  if (isset($node->samples[0]->index_seq)) {
+    // Remove Knowpulse header and menu
+    drupal_add_http_header('Content-Type', 'text/plain');
+    // Automatically download as a file
+    header("Content-Disposition: attachment; filename=indices.txt");
+
+    // Iterate through each sample for this node and extract the sample name and index sequence
+    foreach ($node->samples as $sample) {
+      $output .= "$sample->sample_name\t$sample->index_seq\n";
+    }
+    print $output;
+
+    // This effectively "breaks drupal" (as bad as killing kittens?) right after we get what
+    // we need to prevent any theming from appearing on the page
+    drupal_exit();
+  }
+  else {
+    // CSS to format the link on the page
+    $output .= '<style>
+                a.indices-link-download-redirect {
+                float:right;
+                margin-top: 17px;
+                margin-right: 17px;
+                } </style>';
+    // The error message formated as a drupal error
+    $output .= '<div class="messages error">There are no indices for this sequencing run, therefore no file can be downloaded.</div>';
+    // Provide a link to return the user to the Sequencing Run for this node
+    $output .= l('Return to Sequencing Run', 'node/' . $node->nid, array('attributes' => array('class' => array('indices-link-download-redirect'))));
+  }
+
+  return $output;
+}
+
+/**
  * Implements hook_theme().
  */
 function lims_theme($existing, $type, $theme, $path) {

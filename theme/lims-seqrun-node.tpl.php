@@ -3,7 +3,21 @@
  * This template is used to render the Sequencing Run on the page.
  */
 $node = $node['#node'];
+?>
 
+<style>
+/* Theming for the link to download indices */
+a.indices-link {
+  float:right;
+  margin-top: 17px;
+}
+h2.samples-table-title {
+  margin-top: 0;
+}
+
+</style>
+
+<?php
 // Prepare Species for display.
 $species = array();
 foreach ($node->species as $s) {
@@ -124,8 +138,10 @@ if (!empty($node->samples)) {
         $sample->sample_description
       );
     }
-
-    print '<br /><h2>Samples</h2>' . theme('table',array('header' => $header, 'rows' => $rows));
+    print '<br />';
+    print l('Export Indices', 'node/' . $node->nid . '/download-index', array('attributes' => array('class' => array('indices-link'))));
+    print '<h2 class="samples-table-title">Samples</h2>';
+    print theme('table',array('header' => $header, 'rows' => $rows));
   }
 }
 else {
