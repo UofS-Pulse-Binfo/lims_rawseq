@@ -30,6 +30,25 @@ function lims_menu() {
 }
 
 /**
+ * Implements hook_permission().
+ */
+function lims_permission() {
+  return array(
+    'access lims' => array(
+      'title' => t('Access LIMS'),
+      'description' => t('Apply access permission to LIMS view page.'),
+    )
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function lims_node_access($node, $op, $account) {
+  return (user_access('access lims')) ? NODE_ACCESS_ALLOW : NODE_ACCESS_DENY;
+}
+
+/**
  * Page callback function for hook_menu()
  */
 function lims_download_samples_indices_callback($node) {

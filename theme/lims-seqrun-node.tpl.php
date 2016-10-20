@@ -60,7 +60,7 @@ $rows[] = array(
   $node->seqrun->technology
 );
 $rows[] = array(
-  array( 'data' => 'Ready Type', 'header' => TRUE, 'width' => '20%' ),
+  array( 'data' => 'Read Type', 'header' => TRUE, 'width' => '20%' ),
   $node->seqrun->read_type
 );
 
