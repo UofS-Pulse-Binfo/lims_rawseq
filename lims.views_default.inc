@@ -217,9 +217,9 @@ function lims_views_default_views() {
       'value' => 'Illumina GAIIx',
     ),
     3 => array(
-      'title' => 'Illumina HiSeq',
+      'title' => 'Illumina HiSeq 2500',
       'operator' => '=',
-      'value' => 'Illumina HiSeq',
+      'value' => 'Illumina HiSeq 2500',
     ),
     4 => array(
       'title' => 'Illumina MiSeq',
@@ -227,20 +227,25 @@ function lims_views_default_views() {
       'value' => 'Illumina MiSeq',
     ),
     5 => array(
+      'title' => 'Illumina HiSeq Ten X',
+      'operator' => '=',
+      'value' => 'Illumina HiSeq Ten X',
+    ),
+    6 => array(
       'title' => 'Roche 454',
       'operator' => '=',
       'value' => 'Roche 454',
     ),
-    6 => array(
+    7 => array(
       'title' => 'PacBio RS',
       'operator' => '=',
       'value' => 'PacBio RS',
     ),
-    7 => array(
+    8 => array(
       'title' => 'Oxford Nanopore',
       'operator' => '=',
       'value' => 'Oxford Nanopore',
-    ),
+    )
   );
   /* Filter criterion: Sequencing Run: Read Type */
   $handler->display->display_options['filters']['read_type']['id'] = 'read_type';

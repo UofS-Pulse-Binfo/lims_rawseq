@@ -284,8 +284,9 @@ function seqrun_form($node, $form_state) {
     'technology' => array(
       'Sanger',
       'Illumina GAIIx',
-      'Illumina HiSeq',
+      'Illumina HiSeq 2500',
       'Illumina MiSeq',
+      'Illumina HiSeq X Ten',
       'Roche 454',
       'PacBio RS',
       'Oxford Nanopore',
