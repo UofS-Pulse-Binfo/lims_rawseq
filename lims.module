@@ -45,7 +45,7 @@ function lims_permission() {
  * Implements hook_node_access().
  */
 function lims_node_access($node, $op, $account) {
-  if ($node->type == 'seq_run') {
+  if (isset($node->type) AND ($node->type == 'seq_run')) {
     return (user_access('access lims')) ? NODE_ACCESS_ALLOW : NODE_ACCESS_DENY;
   }
 
