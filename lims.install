@@ -28,6 +28,14 @@ function lims_update_7002(&$sandbox) {
 }
 
 /**
+ * Make technology option more specific. Assuming Illumin HiSeq was all HiSeq 2500.
+ */
+function lims_update_7003(&$sandbox) {
+  db_query('UPDATE {lims_seqrun} SET technology=:new WHERE technology=:old',
+    array(':old' => 'Illumina HiSeq', ':new' => 'Illumina HiSeq 2500'));
+}
+
+/**
  * Implements hook_schema().
  * Defines our database tables to the Drupal Schema API which then
  * creates/removes them on installation/uninstallation of our module.
