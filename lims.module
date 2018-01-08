@@ -311,6 +311,7 @@ function seqrun_form($node, $form_state) {
       'None',
       'Illumina indexing',
       'GBS 96-plex',
+      'NextFlex 96-plex',
       'Custom',
       'Other',
     ),
