@@ -108,11 +108,16 @@ function lims_views_default_views() {
       'value' => 'GBS 96-plex',
     ),
     4 => array(
+      'title' => 'NextFlex 96-plex',
+      'operator' => '=',
+      'value' => 'NextFlex 96-plex',
+    ),
+    5 => array(
       'title' => 'Custom',
       'operator' => '=',
       'value' => 'Custom',
     ),
-    5 => array(
+    6 => array(
       'title' => 'Other',
       'operator' => '=',
       'value' => 'Other',
