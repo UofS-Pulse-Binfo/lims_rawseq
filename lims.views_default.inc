@@ -25,13 +25,61 @@ function lims_views_default_views() {
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'Raw Sequence Search';
   $handler->display->display_options['use_more_always'] = FALSE;
-  $handler->display->display_options['access']['type'] = 'none';
+  $handler->display->display_options['access']['type'] = 'role';
+  $handler->display->display_options['access']['role'] = array(
+    8 => '8',
+  );
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['pager']['options']['items_per_page'] = '50';
   $handler->display->display_options['style_plugin'] = 'table';
+  $handler->display->display_options['style_options']['columns'] = array(
+    'title' => 'title',
+    'library_type' => 'library_type',
+    'index_type' => 'index_type',
+    'technology' => 'technology',
+    'read_type' => 'read_type',
+  );
+  $handler->display->display_options['style_options']['default'] = 'title';
+  $handler->display->display_options['style_options']['info'] = array(
+    'title' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'library_type' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'index_type' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'technology' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'read_type' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+  );
   /* Relationship: Sequencing Run: Sequencing Run Node */
   $handler->display->display_options['relationships']['nid']['id'] = 'nid';
   $handler->display->display_options['relationships']['nid']['table'] = 'lims_seqrun';
@@ -242,9 +290,9 @@ function lims_views_default_views() {
       'value' => 'Illumina MiSeq',
     ),
     5 => array(
-      'title' => 'Illumina HiSeq Ten X',
+      'title' => 'Illumina HiSeq X Ten',
       'operator' => '=',
-      'value' => 'Illumina HiSeq Ten X',
+      'value' => 'Illumina HiSeq X Ten',
     ),
     6 => array(
       'title' => 'Roche 454',
@@ -313,6 +361,28 @@ function lims_views_default_views() {
       'operator' => '=',
       'value' => 'Other',
     ),
+  );
+  /* Filter criterion: Content: Title */
+  $handler->display->display_options['filters']['title']['id'] = 'title';
+  $handler->display->display_options['filters']['title']['table'] = 'node';
+  $handler->display->display_options['filters']['title']['field'] = 'title';
+  $handler->display->display_options['filters']['title']['relationship'] = 'nid';
+  $handler->display->display_options['filters']['title']['operator'] = 'contains';
+  $handler->display->display_options['filters']['title']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['title']['expose']['operator_id'] = 'title_op';
+  $handler->display->display_options['filters']['title']['expose']['label'] = 'Run Name';
+  $handler->display->display_options['filters']['title']['expose']['description'] = 'The name of the sequencing run (partial names are accepted).';
+  $handler->display->display_options['filters']['title']['expose']['operator'] = 'title_op';
+  $handler->display->display_options['filters']['title']['expose']['identifier'] = 'title';
+  $handler->display->display_options['filters']['title']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    4 => 0,
+    5 => 0,
+    3 => 0,
+    6 => 0,
+    7 => 0,
+    8 => 0,
   );
 
   /* Display: Page */
