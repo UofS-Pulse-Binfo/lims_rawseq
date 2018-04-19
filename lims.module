@@ -305,13 +305,15 @@ function seqrun_form($node, $form_state) {
       'Single-enzyme GBS',
       'Dual-enzyme GBS',
       'ChIPseq',
-      'Exome capture'
+      'Exome capture',
+      '10X Chromium'
     ),
     'index_type' => array(
       'None',
       'Illumina indexing',
       'GBS 96-plex',
       'NextFlex 96-plex',
+      '10X Chromium index set',
       'Custom',
       'Other',
     ),

@@ -113,11 +113,16 @@ function lims_views_default_views() {
       'value' => 'NextFlex 96-plex',
     ),
     5 => array(
+      'title' => '10X Chromium index set',
+      'operator' => '=',
+      'value' => '10X Chromium index set',
+    ),
+    6 => array(
       'title' => 'Custom',
       'operator' => '=',
       'value' => 'Custom',
     ),
-    6 => array(
+    7 => array(
       'title' => 'Other',
       'operator' => '=',
       'value' => 'Other',
@@ -183,6 +188,11 @@ function lims_views_default_views() {
       'title' => 'Exome capture',
       'operator' => '=',
       'value' => 'Exome capture',
+    ),
+    8 => array(
+      'title' => '10X Chromium',
+      'operator' => '=',
+      'value' => '10X Chromium',
     ),
   );
   /* Filter criterion: Sequencing Run: Technology */
