@@ -757,7 +757,7 @@ function seqrun_sample_file_submit($form, &$form_state) {
           }
           // -- 2nd column is all sequence.
           //    EXCEPTION: Index ID is "unknown".
-          if (!empty($line[1]) AND !preg_match('/^[ATGCatgc]+$/', $line[1]) AND !preg_match('/[uU]nknown/',$line[0])) {
+          if (!empty($line[1]) AND !preg_match('/^[ATGCatgc\,]+$/', $line[1]) AND !preg_match('/[uU]nknown/',$line[0])) {
             $error = TRUE;
             drupal_set_message('Line '.$i.': The index sequence should consist of only ATGC.','error');
             //form_set_error('sample_file', 'Line '.$i.': The index sequence should consist of only ATGC.');
