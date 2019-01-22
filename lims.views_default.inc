@@ -242,6 +242,16 @@ function lims_views_default_views() {
       'operator' => '=',
       'value' => '10X Chromium',
     ),
+    9 => array(
+      'title' => 'Oxford Nanopore: ligation',
+      'operator' => '=',
+      'value' => 'Oxford Nanopore: ligation',
+    ),
+    10 => array(
+      'title' => 'Oxford Nanopore: rapid',
+      'operator' => '=',
+      'value' => 'Oxford Nanopore: rapid',
+    ),
   );
   /* Filter criterion: Sequencing Run: Technology */
   $handler->display->display_options['filters']['technology']['id'] = 'technology';

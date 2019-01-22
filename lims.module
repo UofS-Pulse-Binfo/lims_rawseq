@@ -306,7 +306,9 @@ function seqrun_form($node, $form_state) {
       'Dual-enzyme GBS',
       'ChIPseq',
       'Exome capture',
-      '10X Chromium'
+      '10X Chromium',
+      'Oxford Nanopore: ligation',
+      'Oxford Nanopore: rapid',
     ),
     'index_type' => array(
       'None',
