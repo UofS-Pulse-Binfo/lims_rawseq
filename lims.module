@@ -3,6 +3,7 @@
  * @file
  * The bones of the LIMS system.
  */
+ require_once 'includes/LIMSrawseq.inc';
 
 /**
  * Implements hook_menu().
@@ -1053,4 +1054,18 @@ function seqrun_view($node, $view_mode, $langcode = NULL) {
   }
 
   return $node;
+}
+
+/**
+ * Implement hook_chado_custom_search().
+ *
+ * This hook simply lists the machine name of the searches so that we can find
+ * the info hook. We've done this for performance reasons.
+ */
+function lims_chado_custom_search() {
+  $searches = [];
+
+  $searches['LIMSrawseq'] = 'Raw Sequence Search';
+
+  return $searches;
 }
