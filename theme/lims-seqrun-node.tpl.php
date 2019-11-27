@@ -91,8 +91,12 @@ if (!empty($node->samples)) {
 
     $sample = $node->samples[0];
 
-    $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-    $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
+    $entity_id = FALSE;
+    if (isset($sample->sample_stock_id) AND $sample->sample_stock_id > 0) {
+      $entity_id = chado_get_record_entity_by_table('stock', $sample->sample_stock_id);
+    }
+    $sample_name = $sample->sample_name;
+    $sample_accession = ($entity_id) ? l($sample->sample_accession, 'bio_data/'.$entity_id, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
 
     $rows[] = array(
       array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
@@ -128,8 +132,12 @@ if (!empty($node->samples)) {
     );
     foreach ($node->samples as $sample) {
 
-      $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-      $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
+      $entity_id = FALSE;
+      if (isset($sample->sample_stock_id) AND $sample->sample_stock_id > 0) {
+        $entity_id = chado_get_record_entity_by_table('stock', $sample->sample_stock_id);
+      }
+      $sample_name = $sample->sample_name;
+      $sample_accession = ($entity_id) ? l($sample->sample_accession, 'bio_data/'.$entity_id, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
 
       $rows[] = array(
         $sample->index_id,

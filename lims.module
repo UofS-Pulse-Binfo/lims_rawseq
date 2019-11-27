@@ -217,7 +217,6 @@ function seqrun_load(&$nodes) {
         'sample_name' => $r->sample_name,
         'sample_accession' => $r->sample_accession,
         'sample_stock_id' => $r->sample_stock_id,
-        'sample_stock_nid' => $r->sample_stock_nid,
         'sample_description' => $r->sample_description,
       );
       $nodes[$nid]->samples[] = (object) $sample;
@@ -242,7 +241,6 @@ function seqrun_load(&$nodes) {
         'sample_name' => $r->sample_name,
         'sample_accession' => $r->sample_accession,
         'sample_stock_id' => $r->sample_stock_id,
-        'sample_stock_nid' => $r->sample_stock_nid,
         'sample_description' => $r->sample_description,
         'plate_well' => $r->plate_well,
       );
@@ -703,7 +701,6 @@ function seqrun_sample_file_submit($form, &$form_state) {
 
         // Reset extra fields
         $sample_stock_id = NULL;
-        $sample_stock_nid = NULL;
 
         // Trim whitespace for each column.
         foreach ($line as $k => $v) {
@@ -770,7 +767,6 @@ function seqrun_sample_file_submit($form, &$form_state) {
             }
             else {
               $sample_stock_id = $kpgerm;
-              $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
             }
           }
           // -- Attempt Auto-detect Accession based on sample name.
@@ -781,7 +777,6 @@ function seqrun_sample_file_submit($form, &$form_state) {
             if (!empty($kpgerm)) {
               $line[3] = $kpgerm->uniquename;
               $sample_stock_id = $kpgerm->stock_id;
-              $sample_stock_nid = chado_get_nid_from_id('stock', $sample_stock_id);
             }
             // If unable to then provide error message. :(
             else {
@@ -802,7 +797,6 @@ function seqrun_sample_file_submit($form, &$form_state) {
               'plate_well' => (isset($line[4])) ? $line[4] : '',
               'sample_description' => (isset($line[5])) ? $line[5] : '',
               'sample_stock_id' => $sample_stock_id,
-              'sample_stock_nid' => $sample_stock_nid,
             );
             drupal_write_record('lims_seqrun_samples', $sample);
           }
@@ -903,7 +897,6 @@ function seqrun_insert($node) {
       'sample_accession' => 'KP:GERM' . $matches[1],
       'sample_description' => $node->sample_description,
       'sample_stock_id' => $node->germplasm_id,
-      'sample_stock_nid' => chado_get_nid_from_id('stock', $node->germplasm_id),
     );
     drupal_write_record('lims_seqrun_samples', $sample);
 
@@ -964,7 +957,6 @@ function seqrun_update($node) {
       'sample_accession' => 'KP:GERM' . $node->germplasm_id,
       'sample_description' => $node->sample_description,
       'sample_stock_id' => $node->germplasm_id,
-      'sample_stock_nid' => chado_get_nid_from_id('stock', $node->germplasm_id),
     );
 
     // Check to see if a sample already exists for this sequencing run
