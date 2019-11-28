@@ -109,6 +109,17 @@ if (!empty($node->samples)) {
 
     print '<br /><h2>Sample</h2>' . theme('table',array('header' => array(), 'rows' => $rows));
 
+    // Now Quality table.
+    if (isset($sample->quality_info)) {
+      $rows = [];
+      foreach($sample->quality_info as $label => $value) {
+        $rows[] = array(
+          array( 'data' => $label, 'header' => TRUE, 'width' => '20%' ),
+          $value
+        );
+      }
+      print '<br /><h2>Quality</h2>' . theme('table',array('header' => array(), 'rows' => $rows));
+    }
   }
   // CASE 2: Multiple samples.
   elseif (sizeof($node->samples) > 0) {
