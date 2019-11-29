@@ -113,6 +113,7 @@ class LimsSampleQualityImporter extends TripalImporter {
       $run_name = $cols[0];
       $sample_name = $cols[1];
       $sample_accession = $cols[2];
+      // First we try using the assumption that this run only has a single sample.
       $sql = "
         SELECT s.sample_id
         FROM lims_seqrun_samples s
@@ -125,7 +126,26 @@ class LimsSampleQualityImporter extends TripalImporter {
         ':run' => $run_name
       ])->fetchField();
       if (!$sample_id) {
-        continue;
+        // If that assumption wasn't valid, then we make the assumption
+        // this is a multi-sample run.
+        $sql = "
+          SELECT s.sample_id
+          FROM {lims_seqrun_samples} s
+          INNER JOIN {lims_seqrun} r ON r.samples_fid=s.samples_fid
+          WHERE r.run_name=:run
+            AND s.sample_name=:name AND s.sample_accession=:accession";
+        $sample_id = db_query($sql, [
+          ':name' => $sample_name,
+          ':accession' => $sample_accession,
+          ':run' => $run_name,
+        ])->fetchField();
+
+        // If that still didn't work then we're out of ideas *shrugs*.
+        if (!$sample_id) {
+          $msg = "Unable to find the sample $sample_name ($sample_accession).";
+          $this->logMessage($msg);
+          continue;
+        }
       }
 
       // 2) Next lets save the quality information!
