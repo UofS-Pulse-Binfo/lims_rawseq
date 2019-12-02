@@ -49,9 +49,11 @@ if ($single_sample) {
   $sample_data[] = ['Description', $sample->sample_description];
 
   $sample_quality_data = [];
-  foreach ($sample->quality_info as $label => $value) {
-    $have_quality = TRUE;
-    $sample_quality_data[] = [$label, $value];
+  if (isset($sample->quality_info)) {
+    foreach ($sample->quality_info as $label => $value) {
+      $have_quality = TRUE;
+      $sample_quality_data[] = [$label, $value];
+    }
   }
 }
 // -- If we have a multi-sample run then we want to show a table...
@@ -78,7 +80,7 @@ elseif (!$single_sample AND !empty($node->samples)) {
     );
 
 
-    if ($sample->quality_info) {
+    if (isset($sample->quality_info) and !empty($sample->quality_info)) {
       $have_quality = TRUE;
       $sample_quality_data[] = array_merge(
         ['Name' => $sample->sample_name, 'Accession' => $sample_accession],
