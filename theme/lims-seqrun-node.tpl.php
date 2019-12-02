@@ -30,6 +30,7 @@ $file_data[] = ['MD5 Checksum', $node->seqrun->md5sum];
 // -- If we have a single sample then we want to show a simple list...
 $single_sample = (sizeof($node->samples) == 1) ? TRUE: FALSE;
 $have_samples = FALSE;
+$have_quality = FALSE;
 if ($single_sample) {
 
   $sample = $node->samples[0];
@@ -49,6 +50,7 @@ if ($single_sample) {
 
   $sample_quality_data = [];
   foreach ($sample->quality_info as $label => $value) {
+    $have_quality = TRUE;
     $sample_quality_data[] = [$label, $value];
   }
 }
