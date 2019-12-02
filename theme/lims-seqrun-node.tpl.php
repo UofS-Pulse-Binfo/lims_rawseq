@@ -29,9 +29,11 @@ $file_data[] = ['MD5 Checksum', $node->seqrun->md5sum];
 // Compile data for samples.
 // -- If we have a single sample then we want to show a simple list...
 $single_sample = (sizeof($node->samples) == 1) ? TRUE: FALSE;
+$have_samples = FALSE;
 if ($single_sample) {
 
   $sample = $node->samples[0];
+  $have_samples = TRUE;
 
   $entity_id = FALSE;
   if (isset($sample->sample_stock_id) AND $sample->sample_stock_id > 0) {
@@ -56,6 +58,7 @@ elseif (!$single_sample AND !empty($node->samples)) {
   $sample_data = [];
   $have_quality = FALSE;
   foreach ($node->samples as $sample) {
+    $have_samples = TRUE;
 
     $entity_id = FALSE;
     if (isset($sample->sample_stock_id) AND $sample->sample_stock_id > 0) {
@@ -90,6 +93,21 @@ elseif (!$single_sample AND !empty($node->samples)) {
       ];
     }
   }
+}
+
+// The fieldsets should be collapsed if there are multiple samples with data.
+$collapsed_samples = '';
+$collapsed_quality = '';
+if (!$single_sample and $have_samples) {
+  $collapsed_samples = 'collapsed';
+  $collapsed_quality = 'collapsed';
+}
+// However, never collapse if there is no data.
+if (!$have_samples) {
+  $collapsed_samples = '';
+}
+if (!$have_quality) {
+  $collapsed_quality = '';
 }
 ?>
 
@@ -143,7 +161,7 @@ h2.samples-table-title {
 </fieldset>
 
 <!-- SAMPLES -->
-<fieldset id="lims-samples-list" class="collapsible collapsed form-wrapper">
+<fieldset id="lims-samples-list" class="collapsible <?php print $collapsed_samples;?> form-wrapper">
   <legend><span class="fieldset-legend">
     <a class="fieldset-title" href="#"><span class="fieldset-legend-prefix element-invisible">Hide</span> Sample(s) List</a><span class="summary"></span></span>
   </legend>
@@ -160,7 +178,7 @@ h2.samples-table-title {
         </tbody>
       </table>
 
-    <?php elseif (empty($samples)): ?>
+    <?php elseif (!$have_samples): ?>
 
       <br />
       <h3 style="margin:0;padding:0;color:red">No samples uploaded for this Sequencing Run.</h3>
@@ -168,7 +186,11 @@ h2.samples-table-title {
 
     <?php else: ?>
 
+      <?php print l('Export Indices', 'node/' . $node->nid . '/download-index',
+        array('attributes' => array('class' => array('indices-link')))); ?>
+
       <table id="sample" class="horizontal-header multi-sample">
+        <caption>Basic sample information indicated when the sequencing run created.</caption>
         <thead>
           <tr><th colspan="2">Index</th><th colspan="4">Sample</th></tr>
           <tr>
@@ -192,7 +214,7 @@ h2.samples-table-title {
 </fieldset>
 
 <!-- QUALITY -->
-<fieldset id="lims-sample-quality" class="collapsible collapsed form-wrapper">
+<fieldset id="lims-sample-quality" class="collapsible <?php print $collapsed_quality;?> form-wrapper">
   <legend><span class="fieldset-legend">
     <a class="fieldset-title" href="#"><span class="fieldset-legend-prefix element-invisible">Hide</span> Quality Statistics</a><span class="summary"></span></span>
   </legend>
@@ -215,9 +237,10 @@ h2.samples-table-title {
       <h3 style="margin:0;padding:0;color:red">No quality data available for this Sequencing Run.</h3>
       <div>Please upload it using the LIMS Sample Quality Tripal Importer</div>
 
-    <?php else: ?>
+    <?php elseif ($have_quality): ?>
 
       <table id="quality" class="horizontal-header multi-sample">
+        <caption>Quality information supplied after basic analysis was completed.</caption>
         <thead>
           <tr><th colspan="2">Sample</th><th colspan="<?php print sizeof($sample_quality_header)+1;?>">Quality Statistics</th></tr>
           <tr>
@@ -247,87 +270,3 @@ h2.samples-table-title {
 
   </div>
 </fieldset>
-
-<?php
-
-/******
-
-// Samples Table
-//-------------------------
-if (!empty($node->samples)) {
-  // CASE 1: Single Sample with no index.
-  if (sizeof($node->samples == 1) AND !isset($node->samples[0]->index_id)) {
-    $rows = array();
-
-    $sample = $node->samples[0];
-
-    $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-    $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
-
-    $rows[] = array(
-      array( 'data' => 'Name', 'header' => TRUE, 'width' => '20%' ),
-      $sample_name
-    );
-    $rows[] = array(
-      array( 'data' => 'Accession', 'header' => TRUE, 'width' => '20%' ),
-      $sample_accession
-    );
-    $rows[] = array(
-      array( 'data' => 'Description', 'header' => TRUE, 'width' => '20%' ),
-      $sample->sample_description
-    );
-
-    print '<br /><h2>Sample</h2>' . theme('table',array('header' => array(), 'rows' => $rows));
-
-    // Now Quality table.
-    if (isset($sample->quality_info)) {
-      $rows = [];
-      foreach($sample->quality_info as $label => $value) {
-        $rows[] = array(
-          array( 'data' => $label, 'header' => TRUE, 'width' => '20%' ),
-          $value
-        );
-      }
-      print '<br /><h2>Quality</h2>' . theme('table',array('header' => array(), 'rows' => $rows));
-    }
-  }
-  // CASE 2: Multiple samples.
-  elseif (sizeof($node->samples) > 0) {
-    $header = array(
-      array('data' => 'Index', 'colspan' => 2, 'style' => 'text-align:center;'),
-      array('data' => 'Sample', 'colspan' => 4, 'style' => 'text-align:center;'),
-    );
-    $rows = array();
-    // Second header.
-    $rows[] = array(
-      array( 'data' => 'ID', 'header' => TRUE),
-      array( 'data' => 'Sequence', 'header' => TRUE),
-      array( 'data' => 'Name', 'header' => TRUE),
-      array( 'data' => 'Accession', 'header' => TRUE),
-      array( 'data' => 'Plate Well', 'header' => TRUE),
-      array( 'data' => 'Description', 'header' => TRUE),
-    );
-    foreach ($node->samples as $sample) {
-
-      $sample_name = (isset($sample->sample_stock_nid)) ? l($sample->sample_name, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_name;
-      $sample_accession = (isset($sample->sample_stock_nid)) ? l($sample->sample_accession, 'node/'.$sample->sample_stock_nid, array('attributes' => array('target' => '_blank'))) : $sample->sample_accession;
-
-      $rows[] = array(
-        $sample->index_id,
-        $sample->index_seq,
-        $sample_name,
-        $sample_accession,
-        $sample->plate_well,
-        $sample->sample_description
-      );
-    }
-    print '<br />';
-    print l('Export Indices', 'node/' . $node->nid . '/download-index', array('attributes' => array('class' => array('indices-link'))));
-    print '<h2 class="samples-table-title">Samples</h2>';
-    print theme('table',array('header' => $header, 'rows' => $rows));
-  }
-}
-else {
-  print '<br /><h3 style="margin:0;padding:0;color:red">No samples uploaded for this Sequencing Run.</h3><div>Please Edit this page and upload a tab-delimited file adhering to the specifications mentioned under "Samples Details"</div>';
-}
-*/
