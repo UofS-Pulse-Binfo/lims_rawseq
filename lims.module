@@ -301,6 +301,7 @@ function seqrun_form($node, $form_state) {
       '10X Chromium',
       'Oxford Nanopore: ligation',
       'Oxford Nanopore: rapid',
+      'Oxford Nanopore: PCR-cDNA',
     ),
     'index_type' => array(
       'None',
