@@ -24,7 +24,7 @@ class LIMSrawseq extends ChadoCustomSearch {
    * is used in hook_menu(). Some examples include 'access content'
    * and 'administer tripal'.
    */
-  public static $permissions = ['access content'];
+  public static $permissions = ['access lims'];
   /**
    * If TRUE, this search will require the submit button to be clicked before
    * executing the query; whereas, if FALSE it will be executed on the
