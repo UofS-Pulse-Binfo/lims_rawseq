@@ -87,15 +87,19 @@
   }
 
   public function loadGermplasmCross($file_path){
-  $transaction = db_transaction();
-  // print upload file name in Job LOGS
-  $file_name_exp = explode('/', $file_path);
-  $this->logMessage('Upload file name: !input_file ',['!input_file' => array_pop($file_name_exp)], TRIPAL_WARNING);
+    $transaction = db_transaction();
+    // print upload file name in Job LOGS
+    $file_name_exp = explode('/', $file_path);
+    $this->logMessage('Upload file name: !input_file ',['!input_file' => array_pop($file_name_exp)], TRIPAL_WARNING);
 
+    if(!file_exists($file_path)){
+	     var_dump(['Could not find file: ', $file_path]);
+    }
 
+    $fh = fopen($file_path, 'r');
 
-
-
+    //read file, and explode each line
+    while ($line_germplasm = fgets($fh)){
 
 
 
