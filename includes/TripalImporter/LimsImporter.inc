@@ -99,18 +99,25 @@
     $fh = fopen($file_path, 'r');
 
     //read file, and explode each line
-    while ($line_germplasm = fgets($fh)){
+    while ($line_lims = fgets($fh)){
+      // skip comments
+      if (preg_match('/^#/', $line_germplasm)) {
+        continue;
+      }
 
+      // skip empty lines
+      if (preg_match('/^\s*$/', $line_germplasm)) {
+        continue;
+      }
 
+      $lims_col = explode("\t", $line_lims);
 
+      $one_lims_name = trim($lims_col[0]);
 
+      $one_lims_path = trim($lims_col[1]);
 
-
-
-
-
-
-
+      $one_lims_md5 = trim($lims_col[2]);
 
 
   }
+}
