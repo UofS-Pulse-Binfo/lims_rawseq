@@ -83,10 +83,10 @@
     $arguments = $this->arguments['run_args'];
     $file_path = $this->arguments['files'][0]['file_path'];
 
-    $this->loadGermplasmCross($file_path);
+    $this->updatelimsinformation($file_path);
   }
 
-  public function loadGermplasmCross($file_path){
+  public function updatelimsinformation($file_path){
     $transaction = db_transaction();
     // print upload file name in Job LOGS
     $file_name_exp = explode('/', $file_path);
@@ -118,6 +118,34 @@
 
       $one_lims_md5 = trim($lims_col[2]);
 
+      $match = array(
+        '' => $one_lims_name,
+      );
 
+      $results = chado_select_record('', ['', '', '', ''], $match);
+
+      if (count($results) == 0){
+        $this->logMessage('The import of germplasm to table:stock, !stock failed.',['!stock' => $stock['name']], TRIPAL_WARNING);
+
+      }
+      elseif((count($results) == 1){
+        //check if file path and md5sum exist, insert if not
+        $identified_lims_id = $results[0]->stock_id;
+        // update file path/md5sum
+        $update_value = (
+          'file_path' => $one_lims_path,
+          'md5sum'=> $one_lims_md5
+        );
+
+        $result_update = chado_update_record('', ['id'=> $identified_lims_id], $update_value);
+
+        if ($result_update == FALSE){
+          $this->logMessage('The file path and md5sum update for lims, !one_l failed.',['!one_l' => $one_lims_name], TRIPAL_WARNING);
+        }
+
+      }
+      else{
+        $this->logMessage('The lims with name, !one_l have multiple matches in DB.',['!one_l' => $one_lims_name], TRIPAL_WARNING);
+      }
   }
 }
