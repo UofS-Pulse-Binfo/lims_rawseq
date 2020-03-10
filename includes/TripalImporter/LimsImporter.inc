@@ -119,33 +119,37 @@
       $one_lims_md5 = trim($lims_col[2]);
 
       $match = array(
-        '' => $one_lims_name,
+        'run_name' => $one_lims_name,
       );
 
-      $results = chado_select_record('', ['', '', '', ''], $match);
+      $results = db_select('lims_seqrun', 'l')
+        ->fields("l", array("run_id", "filename", "md5sum"))
+        ->condition('run_name', $one_lims_name ,'=')
+        ->execute()
+        ->fetchAssoc();
 
-      if (count($results) == 0){
-        $this->logMessage('The import of germplasm to table:stock, !stock failed.',['!stock' => $stock['name']], TRIPAL_WARNING);
+      if ($results == FALSE){
+        $this->logMessage('The import of lime to table:lims_seqrun, !one_lims failed.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
 
       }
-      elseif((count($results) == 1){
+      else{
         //check if file path and md5sum exist, insert if not
-        $identified_lims_id = $results[0]->stock_id;
+        $identified_lims_id = $results['run_id'];
         // update file path/md5sum
-        $update_value = (
-          'file_path' => $one_lims_path,
-          'md5sum'=> $one_lims_md5
-        );
 
-        $result_update = chado_update_record('', ['id'=> $identified_lims_id], $update_value);
+        $result_update = db_update('lims_seqrun')
+          ->fields(array(
+            'filename' => $one_lims_path,
+            'md5sum'=> $one_lims_md5
+          ))
+          ->condition('run_id', $identified_lims_id, '=')
+          ->execute();
 
-        if ($result_update == FALSE){
+        if ($result_update == 0){
           $this->logMessage('The file path and md5sum update for lims, !one_l failed.',['!one_l' => $one_lims_name], TRIPAL_WARNING);
         }
 
       }
-      else{
-        $this->logMessage('The lims with name, !one_l have multiple matches in DB.',['!one_l' => $one_lims_name], TRIPAL_WARNING);
-      }
+
   }
 }
