@@ -36,6 +36,51 @@ function lims_update_7003(&$sandbox) {
 }
 
 /**
+ * Add support for quality information.
+ */
+function lims_update_7004(&$sandbox) {
+  $table = array(
+    'description' => 'Additional information for samples including quality stats.',
+    'fields' => array(
+      'sample_info_id' => array(
+        'description' => 'The primary identifier for a piece of sample information.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sample_id' => array(
+        'description' => 'The primary identifier for a sample.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'info_label' => array(
+        'description' => 'A human-readable label for the type of information (e.g. "Number of Bases").',
+        'type' => 'varchar',
+        'length' => 150,
+      ),
+      'value' => array(
+        'description' => 'The piece of information.',
+        'type' => 'text',
+      ),
+    ),
+   'indexes' => array(
+      'sample_info_label' => array('info_label'),
+      'sample_id' => array('sample_id'),
+    ),
+    'unique keys' => array(),
+    'foreign keys' => array(
+      'lims_seqrun_samples' => array(
+        'table' => 'lims_seqrun_samples',
+        'columns' => array('sample_id' => 'sample_id'),
+      ),
+    ),
+    'primary key' => array('sample_info_id'),
+  );
+  db_create_table('lims_seqrun_samples_info', $table);
+}
+
+/**
  * Implements hook_schema().
  * Defines our database tables to the Drupal Schema API which then
  * creates/removes them on installation/uninstallation of our module.
@@ -242,5 +287,45 @@ function lims_schema() {
     'foreign keys' => array( ),
     'primary key' => array('sample_id'),
   );
+
+  $schema['lims_seqrun_samples_info'] = array(
+    'description' => 'Additional information for samples including quality stats.',
+    'fields' => array(
+      'sample_info_id' => array(
+        'description' => 'The primary identifier for a piece of sample information.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sample_id' => array(
+        'description' => 'The primary identifier for a sample.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'info_label' => array(
+        'description' => 'A human-readable label for the type of information (e.g. "Number of Bases").',
+        'type' => 'varchar',
+        'length' => 150,
+      ),
+      'value' => array(
+        'description' => 'The piece of information.',
+        'type' => 'text',
+      ),
+    ),
+   'indexes' => array(
+      'sample_info_label' => array('info_label'),
+      'sample_id' => array('sample_id'),
+    ),
+    'unique keys' => array(),
+    'foreign keys' => array(
+      'lims_seqrun_samples' => array(
+        'table' => 'lims_seqrun_samples',
+        'columns' => array('sample_id' => 'sample_id'),
+      ),
+    ),
+    'primary key' => array('sample_info_id'),
+  );
+
   return $schema;
 }

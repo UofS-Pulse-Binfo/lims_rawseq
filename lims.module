@@ -250,6 +250,20 @@ function seqrun_load(&$nodes) {
     }
   }
 
+  // Add quality Information to any samples which were collected.
+  foreach ($nodes as $nid => $node) {
+    foreach ($node->samples as $k => $sample) {
+      $sample_id = $sample->sample_id;
+      $results = db_select('lims_seqrun_samples_info', 'info')
+        ->fields('info', ['sample_info_id', 'info_label', 'value'])
+        ->condition('info.sample_id', $sample_id)
+        ->orderBy('info.sample_info_id', 'ASC')
+        ->execute();
+      foreach($results as $r) {
+        $node->samples[$k]->quality_info[$r->info_label] = $r->value;
+      }
+    }
+  }
 }
 
 /**
