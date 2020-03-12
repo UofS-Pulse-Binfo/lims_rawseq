@@ -52,6 +52,9 @@ if ($single_sample) {
   if (isset($sample->quality_info)) {
     foreach ($sample->quality_info as $label => $value) {
       $have_quality = TRUE;
+      if (is_numeric($value)) {
+        $value = number_format($value);
+      }
       $sample_quality_data[] = [$label, $value];
     }
   }
@@ -82,13 +85,18 @@ elseif (!$single_sample AND !empty($node->samples)) {
 
     if (isset($sample->quality_info) and !empty($sample->quality_info)) {
       $have_quality = TRUE;
-      $sample_quality_data[] = array_merge(
+      $sample_quality_datum = array_merge(
         ['Name' => $sample->sample_name, 'Accession' => $sample_accession],
         $sample->quality_info
       );
       foreach ($sample->quality_info as $label => $value) {
         $sample_quality_header[$label] = $label;
+
+        if (is_numeric($value)) {
+          $sample_quality_datum[$label] = number_format($value);
+        }
       }
+      $sample_quality_data[] = $sample_quality_datum;
     }
     else {
       $sample_quality_data[] = [
@@ -238,8 +246,8 @@ h2.samples-table-title {
     <?php elseif (!$have_quality): ?>
 
       <br />
-      <h3 style="margin:0;padding:0;color:red">No quality data available for this Sequencing Run.</h3>
-      <div>Please upload it using the LIMS Sample Quality Tripal Importer</div>
+      <h3 style="margin:0;padding:0;">No quality data available for this Sequencing Run.</h3>
+      <div style="font-style:italic;">Please upload it using the LIMS Sample Quality Tripal Importer</div>
 
     <?php elseif ($have_quality): ?>
 
