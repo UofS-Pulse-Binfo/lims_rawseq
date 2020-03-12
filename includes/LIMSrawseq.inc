@@ -71,8 +71,8 @@ class LIMSrawseq extends ChadoCustomSearch {
       'technology' => [
         'title' => 'Technology',
       ],
-      'read_type' => [
-        'title' => 'Read Type',
+      'library_type' => [
+        'title' => 'Library',
       ],
       'germplasm' => [
         'title' => 'Germplasm Name',
@@ -95,6 +95,10 @@ class LIMSrawseq extends ChadoCustomSearch {
       'read_type' => [
         'title' => 'Read Type',
         'help' => 'The method used to generate the reads.'
+      ],
+      'library_type' => [
+        'title' => 'Library Type',
+        'help' => 'The method of library preparation for sequencing.',
       ],
       'germplasm' => [
         'title' => 'Germplasm Name',
@@ -143,11 +147,17 @@ class LIMSrawseq extends ChadoCustomSearch {
     $form['technology']['#options'] = $tech;
     $form['technology']['#empty_option'] = '- Select Technology -';
 
-    // Make Technology Drop-down.
+    // Make Read Type Drop-down.
     $read_type =  db_query('SELECT read_type FROM {lims_seqrun} GROUP BY read_type')->fetchAllKeyed(0,0);
     $form['read_type']['#type'] = 'select';
     $form['read_type']['#options'] = $read_type;
     $form['read_type']['#empty_option'] = '- Select Read Type -';
+
+    // Make Library Type Drop-down.
+    $library_type = db_query('SELECT library_type FROM {lims_seqrun} GROUP BY library_type')->fetchAllKeyed(0,0);
+    $form['library_type']['#type'] = 'select';
+    $form['library_type']['#options'] = $library_type;
+    $form['library_type']['#empty_option'] = '- Select Library Type -';
 
     return $form;
   }
@@ -179,7 +189,7 @@ class LIMSrawseq extends ChadoCustomSearch {
     $query = "SELECT
         main.run_name,
         main.technology,
-        main.read_type,
+        main.library_type,
         string_agg(o.species, ', ') as species,
         single_stock.name as germplasm
       FROM [lims_seqrun] main
@@ -223,6 +233,11 @@ class LIMSrawseq extends ChadoCustomSearch {
       $where[] = "main.read_type ~* :read_type";
       $args[':read_type'] = $filter_results['read_type'];
     }
+    // -- Library Type.
+    if ($filter_results['library_type'] != '') {
+      $where[] = "main.library_type ~* :library_type";
+      $args[':library_type'] = $filter_results['library_type'];
+    }
     // -- Name.
     if ($filter_results['run_name'] != '') {
       $where[] = "main.run_name ~* :run_name";
@@ -238,7 +253,7 @@ class LIMSrawseq extends ChadoCustomSearch {
     }
 
     // Group it.
-    $query .= "\n" . ' GROUP BY main.run_id, main.run_name, main.technology, main.read_type, single_stock.name';
+    $query .= "\n" . ' GROUP BY main.run_id, main.run_name, main.technology, main.library_type, single_stock.name';
     // Sort even though it is SLOW b/c ppl expect it.
     $query .= "\n" . ' ORDER BY main.run_id DESC';
 
