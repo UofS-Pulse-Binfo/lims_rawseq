@@ -262,11 +262,6 @@ function lims_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'sample_stock_nid' => array(
-        'description' => 'The node id of the germplasm the DNA/RNA was extracted from.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-      ),
       'plate_well' => array(
         'description' => 'The location the sample was placed on the plate.',
         'type' => 'varchar',
