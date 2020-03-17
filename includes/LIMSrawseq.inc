@@ -68,11 +68,11 @@ class LIMSrawseq extends ChadoCustomSearch {
       'run_name' => [
         'title' => 'Name',
       ],
-      'technology' => [
-        'title' => 'Technology',
-      ],
       'library_type' => [
         'title' => 'Library',
+      ],
+      'technology' => [
+        'title' => 'Technology',
       ],
       'germplasm' => [
         'title' => 'Germplasm Name',
@@ -84,6 +84,10 @@ class LIMSrawseq extends ChadoCustomSearch {
     // The filter criteria available to the user.
     // This is used to generate a search form which can be altered.
     'filters' => [
+      'genus' => [
+        'title' => 'Genus',
+        'help' => 'The scientific name of the germplasm the sequencing was performed on.',
+      ],
       'species' => [
         'title' => 'Species',
         'help' => 'The species of the germplasm the sequencing was performed on.',
@@ -128,6 +132,11 @@ class LIMSrawseq extends ChadoCustomSearch {
     $form = parent::form($form, $form_state);
 
     // Make Genus and Species Drop-downs.
+    $description = LIMSrawseq::$info['filters']['genus']['help'];
+    $form['genus']['#prefix'] = '<div id="scientific-nameform-item" class="scientific-name-element form-item"><label>Scientific Name</label>';
+    $form['species']['#suffix'] = '<div class="description">' . $description . '</div></div>';
+    unset($form['genus']['#description'], $form['species']['#description']);
+
     $genus = [];
     $species = [];
     $resource = chado_query('SELECT genus, species FROM {organism} WHERE organism_id IN (SELECT organism_id FROM [lims_seqrun_species])');
@@ -135,8 +144,10 @@ class LIMSrawseq extends ChadoCustomSearch {
       $genus[$r->genus] = $r->genus;
       $species[$r->species] = $r->species;
     }
-    //$form['genus']['#type'] = 'select';
-    //$form['genus']['#options'] = $genus;
+
+    $form['genus']['#type'] = 'select';
+    $form['genus']['#options'] = $genus;
+    $form['genus']['#empty_option'] = '- Select Genus -';
     $form['species']['#type'] = 'select';
     $form['species']['#options'] = $species;
     $form['species']['#empty_option'] = '- Select Species -';
@@ -190,7 +201,7 @@ class LIMSrawseq extends ChadoCustomSearch {
         main.run_name,
         main.technology,
         main.library_type,
-        string_agg(o.species, ', ') as species,
+        string_agg(o.genus||' '||o.species, ', ') as species,
         single_stock.name as germplasm
       FROM [lims_seqrun] main
       LEFT JOIN [lims_seqrun_species] sr_sp ON sr_sp.run_id=main.run_id

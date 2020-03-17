@@ -1,4 +1,22 @@
-.multi-germ {
+#chado-custom-search-form .multi-germ {
   color: gray;
   font-style: italic;
+}
+
+/*  - Scientific Name */
+#chado-custom-search-form .scientific-name-element .form-item label {
+  display: none;
+}
+#chado-custom-search-form .scientific-name-element .form-item .description {
+  display: none;
+}
+#chado-custom-search-form .scientific-name-element .form-item {
+  display: inline-block;
+  margin-bottom: 2px;
+}
+#chado-custom-search-form .scientific-name-element select {
+  width: 175px;
+}
+#chado-custom-search-form .scientific-name-element select#edit-species {
+  width: 275px;
 }
