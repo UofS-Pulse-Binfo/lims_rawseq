@@ -22,9 +22,6 @@
 }
 
 /*  - Quality Subtable */
-#chado-custom-search-form .visible-row {
-  font-weight: bold;
-}
 #chado-custom-search-form .hidden-row .quality-subtable {
   margin: 5px 20px 5px 50px;
 }
@@ -33,16 +30,18 @@
   color: black;
 }
 #chado-custom-search-form .hidden-row {
-  border-bottom: 2px solid #ededed;
+  border-bottom: 2px solid #d3d3d3;
 }
 #chado-custom-search-form .hidden-row .sample-count {
   font-style: italic;
   font-size 0.8em;
   margin-bottom: 0px;
   margin-left: 5px;
+  color: #757575;
 }
 #chado-custom-search-form .hidden-row table {
   margin-top: 2px;
+  border: 2px solid #ededed;
 }
 #chado-custom-search-form .hidden-row table th {
   font-weight:normal;
