@@ -68,11 +68,11 @@ class LIMSrawseq extends ChadoCustomSearch {
       'run_name' => [
         'title' => 'Name',
       ],
-      'technology' => [
-        'title' => 'Technology',
-      ],
       'library_type' => [
         'title' => 'Library',
+      ],
+      'technology' => [
+        'title' => 'Technology',
       ],
       'germplasm' => [
         'title' => 'Germplasm Name',
@@ -84,6 +84,10 @@ class LIMSrawseq extends ChadoCustomSearch {
     // The filter criteria available to the user.
     // This is used to generate a search form which can be altered.
     'filters' => [
+      'genus' => [
+        'title' => 'Genus',
+        'help' => 'The scientific name of the germplasm the sequencing was performed on.',
+      ],
       'species' => [
         'title' => 'Species',
         'help' => 'The species of the germplasm the sequencing was performed on.',
@@ -128,6 +132,11 @@ class LIMSrawseq extends ChadoCustomSearch {
     $form = parent::form($form, $form_state);
 
     // Make Genus and Species Drop-downs.
+    $description = LIMSrawseq::$info['filters']['genus']['help'];
+    $form['genus']['#prefix'] = '<div id="scientific-nameform-item" class="scientific-name-element form-item"><label>Scientific Name</label>';
+    $form['species']['#suffix'] = '<div class="description">' . $description . '</div></div>';
+    unset($form['genus']['#description'], $form['species']['#description']);
+
     $genus = [];
     $species = [];
     $resource = chado_query('SELECT genus, species FROM {organism} WHERE organism_id IN (SELECT organism_id FROM [lims_seqrun_species])');
@@ -135,8 +144,10 @@ class LIMSrawseq extends ChadoCustomSearch {
       $genus[$r->genus] = $r->genus;
       $species[$r->species] = $r->species;
     }
-    //$form['genus']['#type'] = 'select';
-    //$form['genus']['#options'] = $genus;
+
+    $form['genus']['#type'] = 'select';
+    $form['genus']['#options'] = $genus;
+    $form['genus']['#empty_option'] = '- Select Genus -';
     $form['species']['#type'] = 'select';
     $form['species']['#options'] = $species;
     $form['species']['#empty_option'] = '- Select Species -';
@@ -190,7 +201,7 @@ class LIMSrawseq extends ChadoCustomSearch {
         main.run_name,
         main.technology,
         main.library_type,
-        string_agg(o.species, ', ') as species,
+        string_agg(o.genus||' '||o.species, ', ') as species,
         single_stock.name as germplasm
       FROM [lims_seqrun] main
       LEFT JOIN [lims_seqrun_species] sr_sp ON sr_sp.run_id=main.run_id
@@ -277,19 +288,138 @@ class LIMSrawseq extends ChadoCustomSearch {
   public function formatResults(&$form, $results) {
     parent::formatResults($form, $results);
 
-    foreach ($form['results']['#rows'] as $k => &$row) {
+    $new_table = $form['results'];
+    $new_table['#rows'] = [];
+
+    foreach ($form['results']['#rows'] as $k => $row) {
+
 
       // Make the run name a link.
-      $nid = db_query('SELECT nid FROM {lims_seqrun} WHERE run_name=:name',
-        [':name' => $row['run_name']])->fetchField();
-      if ($nid) {
-        $row['run_name'] = l($row['run_name'], 'node/'.$nid);
+      $r = db_query('SELECT run_id, sample_id, samples_fid, nid FROM {lims_seqrun} WHERE run_name=:name',
+        [':name' => $row['run_name']])->fetchObject();
+      if ($r) {
+        $nid = $r->nid;
+        $run_id = $r->run_id;
+        $sample_id = $r->sample_id;
+        $samples_fid = $r->samples_fid;
+        if ($nid) {
+          $row['run_name'] = l($row['run_name'], 'node/'.$nid);
+        }
+      }
+      else {
+        tripal_report_error('lims', TRIPAL_WARNING, "Unable to find lims record for ".print_r($row));
       }
 
       // Provide default for germplasm column.
+      $multiple_germplasm = FALSE;
       if (empty($row['germplasm'])) {
+        $multiple_germplasm = TRUE;
         $row['germplasm'] = '<span class="multi-germ">mutliple samples</span>';
       }
+
+      // Get the quality table.
+      $sample_ids = [];
+      // -- If we have a single sample then just get the quality info for it.
+      if (($multiple_germplasm == FALSE) && ($sample_id)) {
+        $sample_ids = [$sample_id];
+      }
+      // -- If we have multiple samples then grab them all?
+      elseif (($multiple_germplasm == TRUE) && $samples_fid) {
+        $sample_ids = db_query("
+          SELECT sample_id FROM {lims_seqrun_samples} WHERE samples_fid=:fid",
+          [':fid' => $samples_fid])->fetchCol();
+      }
+      // -- Now get the quality table.
+      $new_row_markup = '';
+      $quality_table = $this->getQualityTable($sample_ids);
+      $num_samples = count($sample_ids);
+      if ($num_samples == 1) {
+        $new_row_markup .= '<p class="sample-count">Number of Samples: 1. Samples with quality are shown below.</p>';
+      }
+      else {
+        $new_row_markup .= '<p class="sample-count">Number of Samples: '.$num_samples.'. Samples with quality are shown below.</p>';
+      }
+      if (!empty($quality_table['rows'])) {
+        $new_row_markup .= theme('table', $quality_table);
+      }
+      else {
+        $new_row_markup .= '<p class="no-quality">There is no quality information available for this sequencing run.</p>';
+      }
+
+      // Our own table striping.
+      if ($strip == 'odd') {
+        $strip = 'even';
+      }
+      else {
+        $strip = 'odd';
+      }
+
+      $new_table['#rows'][] = [
+        'data' => $row,
+        'class' => ['visible-row', $strip],
+        'no_striping' => TRUE,
+      ];
+      $new_table['#rows'][] = [
+        'data' => [[
+          'data' => '<div class="quality-subtable">' . $new_row_markup . '</div>',
+          'colspan' => 5,
+        ]],
+        'class' => ['hidden-row', $strip],
+        'no_striping' => TRUE,
+      ];
     }
+
+    $form['results'] = $new_table;
+  }
+
+  /**
+   *
+   */
+  private function getQualityTable($sample_ids) {
+
+    // -- For each sample, select the quality info (if there is some).
+    foreach ($sample_ids as $sample_id) {
+      $quality = db_query('
+        SELECT s.sample_name, s.sample_accession, q.info_label, q.value
+        FROM {lims_seqrun_samples} s
+        INNER JOIN {lims_seqrun_samples_info} q ON s.sample_id=q.sample_id
+        WHERE s.sample_id=:sample_id', [':sample_id' => $sample_id])->fetchAll();
+      foreach ($quality as $q) {
+        $all_quality[$sample_id]['sample_name'] = $q->sample_name;
+        $all_quality[$sample_id]['sample_accession'] = $q->sample_accession;
+        if ($q->info_label) {
+          $all_quality[$sample_id][$q->info_label] = $q->value;
+        }
+      }
+    }
+    $quality_table = [
+      'header' => ['Sample Name', 'Sample Accession', 'Estimated Depth', 'Max Read Length', 'N50 Value', 'N50 Size'],
+      'rows' => [],
+    ];
+    foreach($all_quality as $details) {
+      $row = [
+        'name' => $details['sample_name'],
+        'accession' => $details['sample_accession'],
+      ];
+      $row['depth'] = '';
+      if (isset($details['Estimated Depth'])) {
+        $row['depth'] = number_format($details['Estimated Depth'], 2);
+      }
+      $row['maxread'] = '';
+      if (isset($details['Maximum Read Length'])) {
+        $row['maxread'] = number_format($details['Maximum Read Length']);
+      }
+      $row['n50value'] = '';
+      if (isset($details['N50 Value'])) {
+        $row['n50value'] = number_format($details['N50 Value']);
+      }
+      $row['n50size'] = '';
+      if (isset($details['N50 Size'])) {
+        $row['n50size'] = number_format($details['N50 Size']);
+      }
+
+      $quality_table['rows'][] = $row;
+    }
+    return $quality_table;
   }
 }
