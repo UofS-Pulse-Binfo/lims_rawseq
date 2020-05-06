@@ -128,8 +128,7 @@
         ->fetchAssoc();
 
       if ($results == FALSE){
-        $this->logMessage('The import of lime to table:lims_seqrun, !one_lims failed.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
-
+        $this->logMessage('The import of lims to table:lims_seqrun, !one_lims failed.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
       }
       else{
         //check if file path and md5sum exist, insert if not
