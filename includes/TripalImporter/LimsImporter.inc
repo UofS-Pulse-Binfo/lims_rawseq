@@ -62,7 +62,7 @@
     $form['instructions'] = [
       '#weight' => -100,
       '#markup' => '
-        <h2>Load LIMS file into database</h2>
+        <h2>Update data location and md5sum</h2>
         <p>Upload file must in TSV (tab-separated values) format. Please confirm file format and column order before upload.</p>
       ',
     ];
