@@ -96,22 +96,23 @@
     }
 
     $fh = fopen($file_path, 'r');
-
+    //@test print("$file_path \n");
     //read file, and explode each line
     while ($line_lims = fgets($fh)){
       // skip comments
-      if (preg_match('/^#/', $line_germplasm)) {
+      $line_lims = trim($line_lims);
+      if (preg_match('/^#/', $line_lims)) {
         continue;
       }
 
       // skip empty lines
-      if (preg_match('/^\s*$/', $line_germplasm)) {
+      if (empty($line_lims)) {
         continue;
       }
 
       // For TEST of import files, files with end line of 'TEST_rollback' won't upload to DB
-      if (preg_match('/^TEST_rollback/', $line_germplasm) ){
-        $this->logMessage('Flag !rollback, is found in file, germplasm will not upload to database.',['!rollback' => 'TEST_rollback'], TRIPAL_WARNING);
+      if (preg_match('/^TEST_rollback/', $line_lims) ){
+        $this->logMessage('Flag !rollback, is found in file, lims info will not updated in database.',['!rollback' => 'TEST_rollback'], TRIPAL_WARNING);
         $transaction->rollback();
       }
 
@@ -127,7 +128,7 @@
         'run_name' => $one_lims_name,
       );
 
-      print("Name: $one_lims_name Path: $one_lims_path md5: $one_lims_md5 \n");
+      //@test print("Name $one_lims_name Path $one_lims_path md5 $one_lims_md5 \n");
 
       $results = db_select('lims_seqrun', 'l')
         ->fields("l", array("run_id", "filename", "md5sum"))
@@ -135,10 +136,8 @@
         ->execute()
         ->fetchAssoc();
 
-      print_r("$results\n");
-
       if ($results == FALSE){
-        $this->logMessage('The import of lims to table:lims_seqrun, !one_lims failed.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
+        $this->logMessage('The import of lims !one_lims to table:lims_seqrun, failed since it does not exist.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
       }
       else{
         //check if file path and md5sum exist, insert if not
