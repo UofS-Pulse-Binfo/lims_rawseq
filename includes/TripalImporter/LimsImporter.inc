@@ -109,6 +109,12 @@
         continue;
       }
 
+      // For TEST of import files, files with end line of 'TEST_rollback' won't upload to DB
+      if (preg_match('/^TEST_rollback/', $line_germplasm) ){
+        $this->logMessage('Flag !rollback, is found in file, germplasm will not upload to database.',['!rollback' => 'TEST_rollback'], TRIPAL_WARNING);
+        $transaction->rollback();
+      }
+
       $lims_col = explode("\t", $line_lims);
 
       $one_lims_name = trim($lims_col[0]);
