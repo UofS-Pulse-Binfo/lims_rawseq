@@ -127,11 +127,15 @@
         'run_name' => $one_lims_name,
       );
 
+      print("Name: $one_lims_name Path: $one_lims_path md5: $one_lims_md5 \n");
+
       $results = db_select('lims_seqrun', 'l')
         ->fields("l", array("run_id", "filename", "md5sum"))
         ->condition('run_name', $one_lims_name ,'=')
         ->execute()
         ->fetchAssoc();
+
+      print_r("$results\n");
 
       if ($results == FALSE){
         $this->logMessage('The import of lims to table:lims_seqrun, !one_lims failed.',['!one_lims' => $one_lims_name], TRIPAL_WARNING);
