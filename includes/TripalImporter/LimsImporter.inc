@@ -39,7 +39,7 @@
    * Provides information to the user about the file upload.  Typically this
    * may include a description of the file types allowed.
    */
-  public static $upload_description = 'Germplasm file should be a tab separated file with the following colums:<ol>
+  public static $upload_description = 'File should be a tab separated file with the following columns:<ol>
       <li>Run Name: run name stored in dabase.</li>
       <li>File Name: full path and file name.</li>
       <li>md5sum: the checksum for the file.</li>
