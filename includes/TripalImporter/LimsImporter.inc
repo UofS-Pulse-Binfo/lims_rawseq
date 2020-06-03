@@ -15,7 +15,7 @@
    * The machine name for this loader. This name will be used to construct
    * the URL for the loader.
    */
-  public static $machine_name = 'lims_importer';
+  public static $machine_name = 'lims_datafile_loc_importer';
 
   /**
    * A brief description for this loader.  This description will be
