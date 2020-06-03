@@ -9,7 +9,7 @@
    * The name of this loader.  This name will be presented to the site
    * user.
    */
-  public static $name = 'LIMS Importer';
+  public static $name = 'LIMS Sample Data Location Updater';
 
   /**
    * The machine name for this loader. This name will be used to construct
