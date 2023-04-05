@@ -293,6 +293,7 @@ function seqrun_form($node, $form_state) {
       'Illumina HiSeq X Ten',
       'Roche 454',
       'PacBio RS',
+      'PacBio HiFi',
       'Oxford Nanopore',
     ),
     'read_type' => array(
