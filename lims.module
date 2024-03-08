@@ -291,9 +291,11 @@ function seqrun_form($node, $form_state) {
       'Illumina HiSeq 2500',
       'Illumina MiSeq',
       'Illumina HiSeq X Ten',
+      'Illumina NovaSeq6000',
       'Roche 454',
       'PacBio RS',
       'PacBio HiFi',
+      'Pacbio Revio',
       'Oxford Nanopore',
     ),
     'read_type' => array(
@@ -315,6 +317,7 @@ function seqrun_form($node, $form_state) {
       'Oxford Nanopore: ligation',
       'Oxford Nanopore: rapid',
       'Oxford Nanopore: PCR-cDNA',
+      'CRISPRclean Ribosomal RNA Depletion (Jumpcode Genomics)',
     ),
     'index_type' => array(
       'None',
