@@ -81,6 +81,22 @@ function lims_update_7004(&$sandbox) {
 }
 
 /**
+ * Increases the character limit for the Library Type dropdown.
+ */
+function lims_update_7005(&$sandbox) {
+
+  $table = 'lims_seqrun';
+  $column = 'library_type';
+  $spec = array(
+    'description' => 'The method of library preparation for sequencing.',
+    'type' => 'varchar',
+    'length' => 100,
+  );
+  // Have to specify 2 columns, in this case the column name is staying the same
+  db_change_field($table,$column,$column,$spec);
+}
+
+/**
  * Implements hook_schema().
  * Defines our database tables to the Drupal Schema API which then
  * creates/removes them on installation/uninstallation of our module.
@@ -125,7 +141,7 @@ function lims_schema() {
       'library_type' => array(
         'description' => 'The method of library preparation for sequencing.',
         'type' => 'varchar',
-        'length' => 30
+        'length' => 100,
       ),
       'insert_length' => array(
         'description' => 'The length of the insert in base pairs.',
